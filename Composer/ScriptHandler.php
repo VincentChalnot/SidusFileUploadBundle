@@ -12,9 +12,10 @@ class ScriptHandler
         $IO = $event->getIO();
         $composer = $event->getComposer();
         $cmanager = new ComposerPathFinder($composer);
+        $ds = DIRECTORY_SEPARATOR;
         $options = [
-            'targetSuffix' => self::getTargetSuffix(),
-            'sourcePrefix' => '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR,
+            'targetSuffix' => self::getTargetSuffix('jquery-file-upload'),
+            'sourcePrefix' => "..{$ds}..{$ds}..{$ds}",
         ];
         list($symlinkTarget, $symlinkName) = $cmanager->getSymlinkFromComposer(
             'sidus/file-upload-bundle',
@@ -33,7 +34,7 @@ class ScriptHandler
     protected static function getTargetSuffix($end = '')
     {
         $ds = DIRECTORY_SEPARATOR;
-        return "{$ds}Resources{$ds}public{$ds}vendor{$end}";
+        return "{$ds}Resources{$ds}public{$ds}vendor" . ($end ? $ds . $end : '');
     }
 
     /**
