@@ -6,12 +6,14 @@ use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\Common\Persistence\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException;
+use Gaufrette\Exception\FileNotFound;
+use Gaufrette\Filesystem;
+use Knp\Bundle\GaufretteBundle\FilesystemMap;
+use Oneup\UploaderBundle\Uploader\File\GaufretteFile;
 use Psr\Log\LoggerInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
-use Symfony\Component\Filesystem\Exception\IOException;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\Routing\RouterInterface;
 use UnexpectedValueException;
 
 class ResourceManager
@@ -27,14 +29,24 @@ class ResourceManager
     /** @var LoggerInterface */
     protected $logger;
 
+    /** @var FilesystemMap */
+    protected $filesystemMap;
+
+    /** @var RouterInterface */
+    protected $router;
+
     /**
      * @param Registry $doctrine
      * @param LoggerInterface $logger
+     * @param FilesystemMap $filesystemMap
+     * @param RouterInterface $router
      */
-    public function __construct(Registry $doctrine, LoggerInterface $logger)
+    public function __construct(Registry $doctrine, LoggerInterface $logger, FilesystemMap $filesystemMap, RouterInterface $router)
     {
         $this->doctrine = $doctrine;
         $this->logger = $logger;
+        $this->filesystemMap = $filesystemMap;
+        $this->router = $router;
     }
 
     /**
@@ -52,18 +64,17 @@ class ResourceManager
     /**
      * Add an entry for Resource entity in database at each upload
      *
-     * @param File $file
+     * @param GaufretteFile $file
      * @param string $originalFilename
      * @param string $type
      * @return ResourceInterface
      * @throws \InvalidArgumentException
      */
-    public function addFile(File $file, $originalFilename, $type = null)
+    public function addFile(GaufretteFile $file, $originalFilename, $type = null)
     {
-        $resource = $this->createByType($type);
-
-        $resource->setOriginalFileName($originalFilename)
-            ->setFileName($file->getFilename());
+        $resource = $this->createByType($type)
+            ->setOriginalFileName($originalFilename)
+            ->setFileName($file->getKey());
 
         $em = $this->doctrine->getManager();
         $em->persist($resource);
@@ -77,63 +88,71 @@ class ResourceManager
      * DOES NOT REMOVE THE ENTITY
      *
      * @param ResourceInterface $resource
-     * @throws IOException
      */
     public function removeResourceFile(ResourceInterface $resource)
     {
-        $fs = new Filesystem;
+        $fs = $this->getFilesystem($resource);
         try {
-            $fs->remove($this->getUploadedFilePath($resource));
-        } catch (UnexpectedValueException $e) {
-            $this->logger->warning("Missing file {$resource->getFileName()} ({$resource->getOriginalFileName()})");
+            $fs->delete($resource->getFileName());
+        } catch (\RuntimeException $e) {
+            $this->logger->warning("Tried to remove missing file {$resource->getFileName()} ({$resource->getOriginalFileName()})");
         }
     }
 
     /**
-     * Get the url of a "Resource" (for the web), only works if inside the web root directory
+     * Get the url of a "Resource" (for the web)
      *
      * @param ResourceInterface $resource
+     * @param string $action
+     * @param bool $absolute
      * @return string
-     * @throws UnexpectedValueException
+     * @throws \Exception
      */
-    public function getUploadedFileUrl(ResourceInterface $resource)
+    public function getFileUrl(ResourceInterface $resource, $action = 'download', $absolute = false)
     {
-        // @todo use routing and custom controller
+        /** @noinspection Symfony2PhpRouteMissingInspection */
+        return $this->router->generate("sidus_file_upload.file.{$action}", [
+            'type' => $resource->getType(),
+            'filename' => $resource->getFileName(),
+        ], $absolute);
+    }
+
+    /**
+     * @param ResourceInterface $resource
+     * @return Filesystem
+     */
+    public function getFilesystem(ResourceInterface $resource)
+    {
+        return $this->getFilesystemForType($resource->getType());
+    }
+
+    /**
+     * @param $type
+     * @return Filesystem
+     */
+    public function getFilesystemForType($type)
+    {
+        $config = $this->getResourceTypeConfiguration($type);
+        return $this->filesystemMap->get($config->getFilesystemKey());
     }
 
     /**
      * Get the path for an uploaded file, does not check if file exists
      *
-     * @throws UnexpectedValueException
      * @param ResourceInterface $resource
-     * @return string
+     * @return \Gaufrette\File
+     * @throws FileNotFound
      */
-    public function getUploadedFilePath(ResourceInterface $resource)
+    public function getFile(ResourceInterface $resource)
     {
-        // @todo do it with Oneup ?
-        $directory = $this->getFileUploadBasePath($resource->getType());
-        return $directory . '/' . $resource->getFileName();
-    }
-
-    /**
-     * Get the base directory for a type of file upload configuration
-     *
-     * @param string $type
-     * @return string
-     * @throws UnexpectedValueException
-     */
-    public function getFileUploadBasePath($type)
-    {
-        $config = $this->getResourceType($type);
-        $directory = $config->getUploadConfig()['storage']['directory'];
-        if (!$directory) {
-//            var_dump($config->getUploadConfig());
-            throw new UnexpectedValueException("You must set the directory directive in the oneup bundle for type {$type}");
+        $fs = $this->getFilesystem($resource);
+        if (!$fs->has($resource->getFileName())) {
+            return false;
         }
-        return rtrim($directory, '/');
+        return $fs->get($resource->getFileName());
     }
 
-    public function getResourceType($type)
+    public function getResourceTypeConfiguration($type)
     {
         if (!isset($this->resourceConfigurations[$type])) {
             throw new UnexpectedValueException("Unknown resource type '{$type}'");
@@ -146,7 +165,7 @@ class ResourceManager
      */
     protected function createByType($type)
     {
-        $entity = $this->getResourceType($type)->getEntity();
+        $entity = $this->getResourceTypeConfiguration($type)->getEntity();
         return new $entity();
     }
 
@@ -156,7 +175,7 @@ class ResourceManager
      */
     public function addResourceConfiguration($code, array $resourceConfiguration)
     {
-        $object = new ResourceTypeConfiguration($code, $resourceConfiguration['entity'], $resourceConfiguration['upload_config']);
+        $object = new ResourceTypeConfiguration($code, $resourceConfiguration);
         $this->resourceConfigurations[$code] = $object;
     }
 

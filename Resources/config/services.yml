@@ -1,41 +1,43 @@
 parameters:
     sidus_file_upload.resource.uploader.class: Sidus\FileUploadBundle\EventListener\ResourceUploader
     sidus_file_upload.resource.subscriber.class: Sidus\FileUploadBundle\EventListener\ResourceSubscriber
-    sidus_file_upload.manager.resource.class: Sidus\FileUploadBundle\Manager\ResourceManager
+    sidus_file_upload.resource.manager.class: Sidus\FileUploadBundle\Manager\ResourceManager
     sidus_file_upload.form.resource_type.class: Sidus\FileUploadBundle\Form\Type\ResourceType
     sidus_file_upload.twig.extension.class: Sidus\FileUploadBundle\Twig\UploadExtension
 
 services:
     sidus_file_upload.resource.uploader:
         class: %sidus_file_upload.resource.uploader.class%
-        arguments: [ "@sidus_file_upload.manager.resource" ]
+        arguments: [ "@sidus_file_upload.resource.manager" ]
         tags:
             - { name: kernel.event_listener, event: oneup_uploader.post_persist, method: onUpload }
 
     sidus_file_upload.resource.subscriber:
         class: %sidus_file_upload.resource.subscriber.class%
-        arguments: [ "@sidus_file_upload.manager.resource" ]
+        arguments: [ "@sidus_file_upload.resource.manager" ]
         tags:
             - { name: doctrine.event_subscriber, connection: default }
 
     # ResourceManager
-    sidus_file_upload.manager.resource:
-        class: %sidus_file_upload.manager.resource.class%
+    sidus_file_upload.resource.manager:
+        class: %sidus_file_upload.resource.manager.class%
         arguments:
             - @doctrine
             - @logger
+            - @knp_gaufrette.filesystem_map
+            - @router
         tags:
             - { name: doctrine.event_listener, event: loadClassMetadata }
 
     sidus_file_upload.form.resource_type:
         class: %sidus_file_upload.form.resource_type.class%
-        arguments: [@sidus_file_upload.manager.resource]
+        arguments: [@sidus_file_upload.resource.manager]
         tags:
             - { name: form.type, alias: sidus_resource }
 
     # Twig utils
     sidus_file_upload.twig.upload_extension:
         class: %sidus_file_upload.twig.extension.class%
-        arguments: [@twig.extension.assets]
+        arguments: [@sidus_file_upload.resource.manager]
         tags:
             - { name: twig.extension }

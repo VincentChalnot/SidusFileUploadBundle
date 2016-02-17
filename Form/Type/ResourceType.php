@@ -65,7 +65,7 @@ class ResourceType extends AbstractType
             'class' => null,
         ]);
         $resolver->setNormalizer('resource_type', function(Options $options, $value) {
-            return $this->resourceManager->getResourceType($value);
+            return $this->resourceManager->getResourceTypeConfiguration($value);
         });
         $resolver->setNormalizer('class', function(Options $options, $value) {
             $resourceType = $options['resource_type'];

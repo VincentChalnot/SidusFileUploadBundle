@@ -11,7 +11,9 @@
         $(this).each(function() {
             var widget = $(this);
 
-            widget.find('.fileupload-file .close').click(function(){
+            widget.find('.fileupload-file .close').click(function(e){
+                e.preventDefault();
+                e.stopImmediatePropagation();
                 widget.find('.fileupload-file').hide();
                 widget.find('.fileupload-button').removeClass('disabled');
                 widget.find('input[type="hidden"]').val('');

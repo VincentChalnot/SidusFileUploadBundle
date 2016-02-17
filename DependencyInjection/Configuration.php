@@ -23,7 +23,8 @@ class Configuration implements ConfigurationInterface
 
         $resourceDefinition = $rootNode
             ->children()
-                // Global configuration ?
+                // More global configuration ?
+                ->scalarNode('filesystem_key')->isRequired()->end()
                 ->arrayNode('configurations')
                     ->useAttributeAsKey('code')
                     ->prototype('array')
@@ -47,6 +48,7 @@ class Configuration implements ConfigurationInterface
     {
         $attributeDefinition
             ->scalarNode('entity')->isRequired()->end()
-            ->scalarNode('oneup_key')->end();
+            ->scalarNode('filesystem_key')->defaultNull()->end()
+            ->scalarNode('endpoint')->defaultNull()->end();
     }
 }

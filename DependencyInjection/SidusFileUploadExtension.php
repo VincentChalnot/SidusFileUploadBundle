@@ -34,12 +34,13 @@ class SidusFileUploadExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $managerDefinition = $container->getDefinition('sidus_file_upload.manager.resource');
+        $managerDefinition = $container->getDefinition('sidus_file_upload.resource.manager');
 
         // Automatically declare a service for each attribute configured
         foreach ($config['configurations'] as $code => $resourceConfiguration) {
-            $oneupKey = isset($resourceConfiguration['oneup_key']) ? $resourceConfiguration['oneup_key'] : $code;
-            $resourceConfiguration['upload_config'] = new Parameter('oneup_uploader.config.' . $oneupKey);
+            if (!isset($resourceConfiguration['filesystem_key'])) {
+                $resourceConfiguration['filesystem_key'] = $config['filesystem_key'];
+            }
             $managerDefinition->addMethodCall('addResourceConfiguration', [$code, $resourceConfiguration]);
         }
     }

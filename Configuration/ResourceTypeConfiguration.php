@@ -2,6 +2,8 @@
 
 namespace Sidus\FileUploadBundle\Configuration;
 
+use Gaufrette\Filesystem;
+
 class ResourceTypeConfiguration
 {
     /** @var string */
@@ -10,19 +12,22 @@ class ResourceTypeConfiguration
     /** @var string */
     protected $entity;
 
-    /** @var array */
-    protected $uploadConfig;
+    /** @var string */
+    protected $filesystemKey;
+
+    /** @var string */
+    protected $endpoint;
 
     /**
-     * @param $code
-     * @param string $entity
-     * @param $uploadConfig
+     * @param string $code
+     * @param $configuration
      */
-    public function __construct($code, $entity, $uploadConfig)
+    public function __construct($code, array $configuration)
     {
         $this->code = $code;
-        $this->entity = $entity;
-        $this->uploadConfig = $uploadConfig;
+        $this->entity = $configuration['entity'];
+        $this->filesystemKey = $configuration['filesystem_key'];
+        $this->endpoint = isset($configuration['endpoint']) ? $configuration['endpoint'] : $code;
     }
 
     /**
@@ -42,18 +47,18 @@ class ResourceTypeConfiguration
     }
 
     /**
-     * @return mixed
+     * @return Filesystem
      */
-    public function getUploadConfig()
+    public function getFilesystemKey()
     {
-        return $this->uploadConfig;
+        return $this->filesystemKey;
     }
 
     /**
      * @return string
      */
-    public function getEndPoint()
+    public function getEndpoint()
     {
-        return $this->code;
+        return $this->endpoint;
     }
 }
