@@ -1,0 +1,6 @@
+Sidus\FileUploadBundle\Entity\Resource:
+    properties:
+        fileName:
+            - NotBlank: ~
+        originalFileName:
+            - NotBlank: ~

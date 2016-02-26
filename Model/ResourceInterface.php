@@ -32,5 +32,5 @@ interface ResourceInterface
     /**
      * @return string
      */
-    public function getType();
+    public static function getType();
 }
