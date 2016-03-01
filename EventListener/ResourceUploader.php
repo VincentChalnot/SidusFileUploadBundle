@@ -29,12 +29,18 @@ class ResourceUploader
         }
         $response = $event->getResponse();
 
+        $originalFilename = $file->getName();
         try {
             // Couldn't find anyting better with oneup uploader...
-            $originalFiles = $event->getRequest()->files->all()['files'];
-            $originalFilename = array_pop($originalFiles)->getClientOriginalName();
+            $originalFiles = $event->getRequest()->files->all();
+            if (isset($originalFiles['files'])) {
+                $originalFiles = $originalFiles['files'];
+                if (count($originalFiles)) {
+                    $originalFile = array_pop($originalFiles);
+                    $originalFilename = $originalFile->getClientOriginalName();
+                }
+            }
         } catch (\Exception $e) {
-            $originalFilename = $file->getName();
         }
 
         $file = $this->resourceManager->addFile($file, $originalFilename, $event->getType());
