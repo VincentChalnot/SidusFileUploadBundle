@@ -7,6 +7,7 @@ use Doctrine\Common\Persistence\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException;
 use Gaufrette\Exception\FileNotFound;
+use Gaufrette\File;
 use Gaufrette\Filesystem;
 use Knp\Bundle\GaufretteBundle\FilesystemMap;
 use Oneup\UploaderBundle\Uploader\File\GaufretteFile;
@@ -50,25 +51,13 @@ class ResourceManager
     }
 
     /**
-     * @todo REFACTOR
-     */
-    public function cleanUploads()
-    {
-//        $em = $this->getEntityManager();
-//        $orphans = $em->getRepository('SidusCoreBundle:Editor\Image')->findOrphans();
-//        foreach ($orphans as $orphan) {
-//            $em->remove($orphan);
-//        }
-    }
-
-    /**
      * Add an entry for Resource entity in database at each upload
      *
      * @param GaufretteFile $file
      * @param string $originalFilename
      * @param string $type
      * @return ResourceInterface
-     * @throws \InvalidArgumentException
+     * @throws \InvalidArgumentException|UnexpectedValueException
      */
     public function addFile(GaufretteFile $file, $originalFilename, $type = null)
     {
@@ -88,6 +77,7 @@ class ResourceManager
      * DOES NOT REMOVE THE ENTITY
      *
      * @param ResourceInterface $resource
+     * @throws UnexpectedValueException
      */
     public function removeResourceFile(ResourceInterface $resource)
     {
@@ -120,6 +110,7 @@ class ResourceManager
     /**
      * @param ResourceInterface $resource
      * @return Filesystem
+     * @throws UnexpectedValueException
      */
     public function getFilesystem(ResourceInterface $resource)
     {
@@ -129,6 +120,7 @@ class ResourceManager
     /**
      * @param $type
      * @return Filesystem
+     * @throws UnexpectedValueException
      */
     public function getFilesystemForType($type)
     {
@@ -140,8 +132,8 @@ class ResourceManager
      * Get the path for an uploaded file, does not check if file exists
      *
      * @param ResourceInterface $resource
-     * @return \Gaufrette\File
-     * @throws FileNotFound
+     * @return GaufretteFile
+     * @throws FileNotFound|UnexpectedValueException
      */
     public function getFile(ResourceInterface $resource)
     {
@@ -149,9 +141,15 @@ class ResourceManager
         if (!$fs->has($resource->getFileName())) {
             return false;
         }
-        return $fs->get($resource->getFileName());
+        $file = $fs->get($resource->getFileName());
+        return new GaufretteFile($file, $fs); // @todo Where do I get getStreamWrapperPrefix if needed ?
     }
 
+    /**
+     * @param $type
+     * @return ResourceTypeConfiguration
+     * @throws UnexpectedValueException
+     */
     public function getResourceTypeConfiguration($type)
     {
         if (!isset($this->resourceConfigurations[$type])) {
@@ -162,6 +160,7 @@ class ResourceManager
     /**
      * @param $type
      * @return ResourceInterface
+     * @throws UnexpectedValueException
      */
     protected function createByType($type)
     {
