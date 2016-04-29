@@ -7,7 +7,6 @@ use Doctrine\Common\Persistence\Event\LoadClassMetadataEventArgs;
 use Doctrine\ORM\Mapping\ClassMetadataInfo;
 use Doctrine\ORM\Mapping\MappingException;
 use Gaufrette\Exception\FileNotFound;
-use Gaufrette\File;
 use Gaufrette\Filesystem;
 use Knp\Bundle\GaufretteBundle\FilesystemMap;
 use Oneup\UploaderBundle\Uploader\File\GaufretteFile;

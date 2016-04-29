@@ -17,7 +17,7 @@ class FormPass implements CompilerPassInterface
         $template = 'SidusFileUploadBundle:Form:fields.html.twig';
         $resources = $container->getParameter('twig.form.resources');
         // Ensure it wasn't already added via config
-        if (!in_array($template, $resources)) {
+        if (!in_array($template, $resources, true)) {
             $resources[] = $template;
             $container->setParameter('twig.form.resources', $resources);
         }

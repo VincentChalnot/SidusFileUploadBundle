@@ -8,7 +8,6 @@ use Sidus\FileUploadBundle\Manager\ResourceManager;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\Form\FormView;
-use Symfony\Component\OptionsResolver\Exception\AccessException;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -32,7 +31,7 @@ class ResourceType extends AbstractType
     {
         /** @var ResourceTypeConfiguration $resourceType */
         $resourceType = $options['resource_type'];
-        $view->vars['endpoint'] = $resourceType->getEndPoint();
+        $view->vars['endpoint'] = $resourceType->getEndpoint();
     }
 
     /**

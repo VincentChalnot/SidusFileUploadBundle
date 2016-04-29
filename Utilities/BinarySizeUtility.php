@@ -8,30 +8,32 @@ class BinarySizeUtility
     /**
      * Unit table
      *
-     * @var array
+     * @return array
      */
-    protected static $binarySizes = [
-        // SI units
-        'o'   => 1,     // octet
-        'ko'  => 1e3,   // kilooctet
-        'mo'  => 1e6,   // mégaoctet
-        'go'  => 1e9,   // gigaoctet
-        'to'  => 1e12,  // téraoctet
-        'po'  => 1e15,  // pétaoctet
-        'eo'  => 1e18,  // exaoctet
-        'zo'  => 1e21,  // zettaoctet
-        'yo'  => 1e24,  // yottaoctet
+    protected static function getBinarySizes() {
+        return [
+            // SI units
+            'o'   => 1,     // octet
+            'ko'  => 1e3,   // kilooctet
+            'mo'  => 1e6,   // mégaoctet
+            'go'  => 1e9,   // gigaoctet
+            'to'  => 1e12,  // téraoctet
+            'po'  => 1e15,  // pétaoctet
+            'eo'  => 1e18,  // exaoctet
+            'zo'  => 1e21,  // zettaoctet
+            'yo'  => 1e24,  // yottaoctet
 
-        // Additionnal binary units
-        'kio' => 2^10,  // kibioctet
-        'mio' => 2^20,  // mébioctet
-        'gio' => 2^30,  // gibioctet
-        'tio' => 2^40,  // tébioctet
-        'pio' => 2^50,  // pébioctet
-        'eio' => 2^60,  // exbioctet
-        'zio' => 2^70,  // zébioctet
-        'yio' => 2^80,  // yobioctet
-    ];
+            // Additionnal binary units
+            'kio' => 2^10,  // kibioctet
+            'mio' => 2^20,  // mébioctet
+            'gio' => 2^30,  // gibioctet
+            'tio' => 2^40,  // tébioctet
+            'pio' => 2^50,  // pébioctet
+            'eio' => 2^60,  // exbioctet
+            'zio' => 2^70,  // zébioctet
+            'yio' => 2^80,  // yobioctet
+        ];
+    }
 
     /**
      * Takes a human-formatted binary size and return a number of octets
@@ -58,10 +60,10 @@ class BinarySizeUtility
             $byteMultiplier = 8;
             $unit = substr($unit, 0, -1) . 'o';
         }
-        if (!array_key_exists($unit, self::$binarySizes)) {
+        if (!array_key_exists($unit, self::getBinarySizes())) {
             throw new \UnexpectedValueException("Unexpected unit {$unit}");
         }
-        return (int) ($oSize * self::$binarySizes[$unit] * $byteMultiplier);
+        return (int) ($oSize * self::getBinarySizes()[$unit] * $byteMultiplier);
     }
 
     /**
@@ -77,7 +79,7 @@ class BinarySizeUtility
      */
     public static function format($size, $decimals = 2 , $decPoint = '.' , $thousandsSep = '', $unitSep = '') {
         $output = $unit = null;
-        foreach (self::$binarySizes as $unit => $divider) {
+        foreach (self::getBinarySizes() as $unit => $divider) {
             $output = $size / $divider;
             if ($output < 1000) {
                 break;

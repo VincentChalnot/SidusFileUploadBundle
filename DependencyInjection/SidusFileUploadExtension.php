@@ -2,12 +2,8 @@
 
 namespace Sidus\FileUploadBundle\DependencyInjection;
 
-use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
-use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Exception\BadMethodCallException;
-use Symfony\Component\DependencyInjection\Parameter;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 use Symfony\Component\DependencyInjection\Loader;
 
