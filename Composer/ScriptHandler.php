@@ -5,8 +5,19 @@ namespace Sidus\FileUploadBundle\Composer;
 use Composer\Script\Event;
 use Mopa\Bridge\Composer\Util\ComposerPathFinder;
 
+/**
+ * Composer script to symlink jQuery FileUpload plugin to the public directory of this bundle
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class ScriptHandler
 {
+    /**
+     * Symlink JQuery File Upload plugin in the public directory
+     *
+     * @param Event $event
+     * @throws \Exception
+     */
     public static function symlinkJQueryFileUpload(Event $event)
     {
         $IO = $event->getIO();
@@ -31,12 +42,6 @@ class ScriptHandler
         $IO->write('<info>OK</info>');
     }
 
-    protected static function getTargetSuffix($end = '')
-    {
-        $ds = DIRECTORY_SEPARATOR;
-        return "{$ds}Resources{$ds}public{$ds}vendor" . ($end ? $ds . $end : '');
-    }
-
     /**
      * Checks symlink's existence.
      *
@@ -59,10 +64,13 @@ class ScriptHandler
                     throw new \UnexpectedValueException("Symlink '{$symlinkName}' points to '{$linkTarget}' instead of '{$symlinkTarget}'");
                 }
                 unlink($symlinkName);
+
                 return false;
             }
+
             return true;
         }
+
         return false;
     }
 
@@ -82,5 +90,12 @@ class ScriptHandler
         if (false === $target = readlink($symlinkName)) {
             throw new \UnexpectedValueException("Symlink {$symlinkName} points to target {$target}");
         }
+    }
+
+    protected static function getTargetSuffix($end = '')
+    {
+        $ds = DIRECTORY_SEPARATOR;
+
+        return "{$ds}Resources{$ds}public{$ds}vendor".($end ? $ds.$end : '');
     }
 }

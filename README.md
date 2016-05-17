@@ -1,4 +1,4 @@
-SidusDataGridBundle
+Sidus/FileUploadBundle
 ===========
 
 Work in progress.

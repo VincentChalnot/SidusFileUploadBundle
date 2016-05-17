@@ -6,6 +6,11 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 
+/**
+ * Automatically add the file-upload widget form in the twig templates
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class FormPass implements CompilerPassInterface
 {
     /**

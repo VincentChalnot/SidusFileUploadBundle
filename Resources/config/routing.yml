@@ -4,4 +4,4 @@ oneup_uploader:
 
 sidus_file_upload.file.download:
     path:     /fileupload/{type}/download/{filename}
-    defaults: { _controller: SidusFileUploadBundle:File:download }
+    defaults: { _controller: 'SidusFileUploadBundle:File:download' }

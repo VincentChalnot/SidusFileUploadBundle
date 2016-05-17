@@ -1,26 +1,32 @@
 {
-  "name": "sidus/file-upload-bundle",
-  "description": "Allow to upload files directly in Doctrine entities, based on oneup/uploader-bundle and jQuery-file-upload",
-  "keywords": [ "upload", "doctrine", "uploader" ],
-  "homepage": "https://github.com/VincentChalnot/SidusFileUploadBundle",
-  "type": "library",
-  "license": "GPL-2.0",
-  "authors": [
-    {
-      "name": "Vincent Chalnot",
-      "email": "vincent@sidus.fr",
-      "homepage": "http://chalnot.fr",
-      "role": "Developer"
+    "name": "sidus/file-upload-bundle",
+    "description": "Allow to upload files directly in Doctrine entities, based on oneup/uploader-bundle and jQuery-file-upload",
+    "keywords": [
+        "upload",
+        "doctrine",
+        "uploader"
+    ],
+    "homepage": "https://github.com/VincentChalnot/SidusFileUploadBundle",
+    "type": "library",
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Vincent Chalnot",
+            "email": "vincent@sidus.fr",
+            "homepage": "http://chalnot.fr",
+            "role": "Developer"
+        }
+    ],
+    "target-dir": "Sidus/FileUploadBundle",
+    "autoload": {
+        "psr-0": {
+            "Sidus\\FileUploadBundle": ""
+        }
+    },
+    "require": {
+        "doctrine/doctrine-bundle": "~1.4",
+        "knplabs/knp-gaufrette-bundle": "~0.3",
+        "oneup/uploader-bundle": "1.5.*",
+        "blueimp/jquery-file-upload": "9.9.*"
     }
-  ],
-  "target-dir": "Sidus/FileUploadBundle",
-  "autoload": {
-    "psr-0": { "Sidus\\FileUploadBundle": "" }
-  },
-  "require": {
-    "doctrine/doctrine-bundle": "~1.4",
-    "knplabs/knp-gaufrette-bundle": "~0.3",
-    "oneup/uploader-bundle": "1.5.*",
-    "blueimp/jquery-file-upload": "9.9.*"
-  }
 }

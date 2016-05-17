@@ -2,7 +2,6 @@
 
 namespace Sidus\FileUploadBundle\Controller;
 
-
 use Gaufrette\Adapter\Local;
 use Gaufrette\Exception\FileNotFound;
 use Gaufrette\StreamMode;
@@ -13,6 +12,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use UnexpectedValueException;
 
+/**
+ * Expose a download link for uploaded resources
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class FileController extends Controller
 {
     /**
@@ -29,8 +33,8 @@ class FileController extends Controller
     }
 
     /**
-     * @param $type
-     * @param $filename
+     * @param      $type
+     * @param      $filename
      * @param bool $download
      * @return StreamedResponse|NotFoundHttpException
      * @throws UnexpectedValueException
@@ -55,7 +59,7 @@ class FileController extends Controller
             throw new UnexpectedValueException("Unable to open stream to file {$filename}");
         }
 
-        $response = new StreamedResponse(function() use ($stream) {
+        $response = new StreamedResponse(function () use ($stream) {
             while (!$stream->eof()) {
                 echo $stream->read(512);
             }
@@ -71,7 +75,10 @@ class FileController extends Controller
                 $disposition = 'inline';
             }
         }
-        $response->headers->set('Content-Disposition', $response->headers->makeDisposition($disposition, $originalFilename));
+        $response->headers->set(
+            'Content-Disposition',
+            $response->headers->makeDisposition($disposition, $originalFilename)
+        );
 
         return $response;
     }
@@ -80,11 +87,13 @@ class FileController extends Controller
      * @param string $type
      * @param string $filename
      * @return ResourceInterface|null
+     * @throws \UnexpectedValueException
      */
     protected function getResource($type, $filename)
     {
         $resourceManager = $this->get('sidus_file_upload.resource.manager');
         $resourceConfiguration = $resourceManager->getResourceTypeConfiguration($type);
+
         return $this->get('doctrine')->getRepository($resourceConfiguration->getEntity())->findOneBy([
             'fileName' => $filename,
         ]);

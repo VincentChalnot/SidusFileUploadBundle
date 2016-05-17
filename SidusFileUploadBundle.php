@@ -6,6 +6,9 @@ use Sidus\FileUploadBundle\DependencyInjection\Compiler\FormPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
+/**
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class SidusFileUploadBundle extends Bundle
 {
     /**

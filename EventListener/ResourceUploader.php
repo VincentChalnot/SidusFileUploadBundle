@@ -8,11 +8,19 @@ use Oneup\UploaderBundle\Uploader\File\GaufretteFile;
 use Oneup\UploaderBundle\Uploader\Response\AbstractResponse;
 use Sidus\FileUploadBundle\Manager\ResourceManager;
 
+/**
+ * Handle the upload event, creating the corresponding entity and returning it's reference
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class ResourceUploader
 {
     /** @var ResourceManager */
     protected $resourceManager;
 
+    /**
+     * @param ResourceManager $resourceManager
+     */
     public function __construct(ResourceManager $resourceManager)
     {
         $this->resourceManager = $resourceManager;
@@ -25,7 +33,7 @@ class ResourceUploader
      */
     public function onUpload(PostPersistEvent $event)
     {
-        $file     = $event->getFile();
+        $file = $event->getFile();
         if (!$file instanceof GaufretteFile) {
             $class = get_class($file);
             throw new \UnexpectedValueException("Only gaufrette files are supported, '{$class}' given");
@@ -50,6 +58,7 @@ class ResourceUploader
         /** @var AbstractResponse $response */
         $response = $event->getResponse();
         $response[] = $file;
+
         return $response;
     }
 }

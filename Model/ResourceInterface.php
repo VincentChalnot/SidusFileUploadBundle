@@ -3,7 +3,9 @@
 namespace Sidus\FileUploadBundle\Model;
 
 /**
- * Uploaded resource
+ * Interface for uploaded resources
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
  */
 interface ResourceInterface
 {

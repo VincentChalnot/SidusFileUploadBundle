@@ -12,13 +12,19 @@ use Knp\Bundle\GaufretteBundle\FilesystemMap;
 use Oneup\UploaderBundle\Uploader\File\GaufretteFile;
 use Psr\Log\LoggerInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
+use Sidus\FileUploadBundle\Entity\Resource;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Symfony\Component\Routing\RouterInterface;
 use UnexpectedValueException;
 
+/**
+ * Manage access to resources: entities and files
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class ResourceManager
 {
-    const BASE_RESOURCE = 'Sidus\FileUploadBundle\Entity\Resource';
+    const BASE_RESOURCE = Resource::class;
 
     /** @var ResourceTypeConfiguration[] */
     protected $resourceConfigurations;
@@ -36,13 +42,17 @@ class ResourceManager
     protected $router;
 
     /**
-     * @param Registry $doctrine
+     * @param Registry        $doctrine
      * @param LoggerInterface $logger
-     * @param FilesystemMap $filesystemMap
+     * @param FilesystemMap   $filesystemMap
      * @param RouterInterface $router
      */
-    public function __construct(Registry $doctrine, LoggerInterface $logger, FilesystemMap $filesystemMap, RouterInterface $router)
-    {
+    public function __construct(
+        Registry $doctrine,
+        LoggerInterface $logger,
+        FilesystemMap $filesystemMap,
+        RouterInterface $router
+    ) {
         $this->doctrine = $doctrine;
         $this->logger = $logger;
         $this->filesystemMap = $filesystemMap;
@@ -53,8 +63,8 @@ class ResourceManager
      * Add an entry for Resource entity in database at each upload
      *
      * @param GaufretteFile $file
-     * @param string $originalFilename
-     * @param string $type
+     * @param string        $originalFilename
+     * @param string        $type
      * @return ResourceInterface
      * @throws \InvalidArgumentException|UnexpectedValueException
      */
@@ -92,14 +102,15 @@ class ResourceManager
      * Get the url of a "Resource" (for the web)
      *
      * @param ResourceInterface $resource
-     * @param string $action
-     * @param bool $absolute
+     * @param string            $action
+     * @param bool              $absolute
      * @return string
      * @throws \Exception
      */
     public function getFileUrl(ResourceInterface $resource, $action = 'download', $absolute = false)
     {
         /** @noinspection Symfony2PhpRouteMissingInspection */
+
         return $this->router->generate("sidus_file_upload.file.{$action}", [
             'type' => $resource->getType(),
             'filename' => $resource->getFileName(),
@@ -117,13 +128,14 @@ class ResourceManager
     }
 
     /**
-     * @param $type
+     * @param string $type
      * @return Filesystem
      * @throws UnexpectedValueException
      */
     public function getFilesystemForType($type)
     {
         $config = $this->getResourceTypeConfiguration($type);
+
         return $this->filesystemMap->get($config->getFilesystemKey());
     }
 
@@ -141,11 +153,12 @@ class ResourceManager
             return false;
         }
         $file = $fs->get($resource->getFileName());
-        return new GaufretteFile($file, $fs); // @todo Where do I get getStreamWrapperPrefix if needed ?
+
+        return new GaufretteFile($file, $fs); // @70D0 Where do I get getStreamWrapperPrefix if needed ?
     }
 
     /**
-     * @param $type
+     * @param string $type
      * @return ResourceTypeConfiguration
      * @throws UnexpectedValueException
      */
@@ -154,22 +167,13 @@ class ResourceManager
         if (!isset($this->resourceConfigurations[$type])) {
             throw new UnexpectedValueException("Unknown resource type '{$type}'");
         }
+
         return $this->resourceConfigurations[$type];
-    }
-    /**
-     * @param $type
-     * @return ResourceInterface
-     * @throws UnexpectedValueException
-     */
-    protected function createByType($type)
-    {
-        $entity = $this->getResourceTypeConfiguration($type)->getEntity();
-        return new $entity();
     }
 
     /**
-     * @param $code
-     * @param array $resourceConfiguration
+     * @param string $code
+     * @param array  $resourceConfiguration
      */
     public function addResourceConfiguration($code, array $resourceConfiguration)
     {
@@ -208,5 +212,17 @@ class ResourceManager
                 );
             }
         }
+    }
+
+    /**
+     * @param $type
+     * @return ResourceInterface
+     * @throws UnexpectedValueException
+     */
+    protected function createByType($type)
+    {
+        $entity = $this->getResourceTypeConfiguration($type)->getEntity();
+
+        return new $entity();
     }
 }

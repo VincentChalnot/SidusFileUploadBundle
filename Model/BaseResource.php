@@ -6,12 +6,15 @@ use Doctrine\ORM\Mapping as ORM;
 use JsonSerializable;
 
 /**
- * Uploaded resource
+ * Uploaded resource: minimum code required to handle file-upload properly
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
  */
 abstract class BaseResource implements ResourceInterface, JsonSerializable
 {
     /**
      * Generated real file name
+     *
      * @var string
      * @ORM\Column(name="file_name", type="string", length=255, unique=true)
      */
@@ -19,6 +22,7 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
 
     /**
      * Original fileName from upload or import script
+     *
      * @var string
      * @ORM\Column(name="original_file_name", type="string", length=255)
      */
@@ -39,6 +43,7 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
     public function setOriginalFileName($originalFileName)
     {
         $this->originalFileName = $originalFileName;
+
         return $this;
     }
 
@@ -57,9 +62,13 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
     public function setFileName($fileName)
     {
         $this->fileName = $fileName;
+
         return $this;
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return (string) $this->getFileName();
@@ -67,6 +76,7 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
 
     /**
      * Serialize automatically the entity when passed to json_encode
+     *
      * @return array
      */
     public function jsonSerialize()

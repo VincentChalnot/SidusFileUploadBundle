@@ -7,6 +7,11 @@ use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Twig_Extension;
 use Twig_SimpleFunction;
 
+/**
+ * Used to get the public path of a resource from a twig template
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class UploadExtension extends Twig_Extension
 {
     /** @var ResourceManager */
@@ -20,18 +25,31 @@ class UploadExtension extends Twig_Extension
         $this->resourceManager = $resourceManager;
     }
 
+    /**
+     * @return array
+     */
     public function getFunctions()
     {
         return [
-            new Twig_SimpleFunction('resource_path', [$this, 'resource_path'])
+            new Twig_SimpleFunction('resource_path', [$this, 'getResourcePath']),
         ];
     }
 
-    public function resource_path(ResourceInterface $resource = null, $action = 'download', $absolute = false)
+    /**
+     * @param ResourceInterface|null $resource
+     * @param string                 $action
+     * @param bool                   $absolute
+     * @return string
+     * @throws \Exception
+     */
+    public function getResourcePath(ResourceInterface $resource = null, $action = 'download', $absolute = false)
     {
         return $this->resourceManager->getFileUrl($resource, $action, $absolute);
     }
 
+    /**
+     * @return string
+     */
     public function getName()
     {
         return 'sidus_upload_extension';

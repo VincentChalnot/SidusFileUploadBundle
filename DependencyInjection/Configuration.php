@@ -15,6 +15,7 @@ class Configuration implements ConfigurationInterface
 {
     /**
      * {@inheritdoc}
+     * @throws \RuntimeException
      */
     public function getConfigTreeBuilder()
     {
@@ -23,19 +24,19 @@ class Configuration implements ConfigurationInterface
 
         $resourceDefinition = $rootNode
             ->children()
-                // More global configuration ?
-                ->scalarNode('filesystem_key')->isRequired()->end()
-                ->arrayNode('configurations')
-                    ->useAttributeAsKey('code')
-                    ->prototype('array')
-                        ->performNoDeepMerging()
-                        ->children();
+            // More global configuration ?
+            ->scalarNode('filesystem_key')->isRequired()->end()
+            ->arrayNode('configurations')
+            ->useAttributeAsKey('code')
+            ->prototype('array')
+            ->performNoDeepMerging()
+            ->children();
 
         $this->appendResourceDefinition($resourceDefinition);
 
         $resourceDefinition->end()
-                    ->end()
-                ->end()
+            ->end()
+            ->end()
             ->end();
 
         return $treeBuilder;

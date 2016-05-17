@@ -4,6 +4,11 @@ namespace Sidus\FileUploadBundle\Configuration;
 
 use Gaufrette\Filesystem;
 
+/**
+ * Resource type configuration as a service, handles the link between a Doctrine entity and a filesystem
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class ResourceTypeConfiguration
 {
     /** @var string */
@@ -20,7 +25,7 @@ class ResourceTypeConfiguration
 
     /**
      * @param string $code
-     * @param $configuration
+     * @param array  $configuration
      */
     public function __construct($code, array $configuration)
     {

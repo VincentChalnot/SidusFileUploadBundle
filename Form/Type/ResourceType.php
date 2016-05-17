@@ -11,6 +11,11 @@ use Symfony\Component\Form\FormView;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/**
+ * Easy file-upload integration in forms
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class ResourceType extends AbstractType
 {
     /** @var ResourceManager */
@@ -25,7 +30,9 @@ class ResourceType extends AbstractType
     }
 
     /**
-     * @inheritDoc
+     * @param FormView      $view
+     * @param FormInterface $form
+     * @param array         $options
      */
     public function buildView(FormView $view, FormInterface $form, array $options)
     {
@@ -35,7 +42,7 @@ class ResourceType extends AbstractType
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function getParent()
     {
@@ -43,7 +50,7 @@ class ResourceType extends AbstractType
     }
 
     /**
-     * @inheritDoc
+     * @return string
      */
     public function getName()
     {
@@ -51,8 +58,10 @@ class ResourceType extends AbstractType
     }
 
     /**
-     * @inheritDoc
-     * @throws \Exception
+     * @param OptionsResolver $resolver
+     * @throws \Symfony\Component\OptionsResolver\Exception\AccessException
+     * @throws \Symfony\Component\OptionsResolver\Exception\UndefinedOptionsException
+     * @throws \UnexpectedValueException
      */
     public function configureOptions(OptionsResolver $resolver)
     {
@@ -63,21 +72,25 @@ class ResourceType extends AbstractType
             'query_builder' => $this->getQueryBuilder(),
             'class' => null,
         ]);
-        $resolver->setNormalizer('resource_type', function(Options $options, $value) {
+        $resolver->setNormalizer('resource_type', function (Options $options, $value) {
             return $this->resourceManager->getResourceTypeConfiguration($value);
         });
-        $resolver->setNormalizer('class', function(Options $options, $value) {
+        $resolver->setNormalizer('class', function (Options $options, $value) {
             $resourceType = $options['resource_type'];
             if (!$value && $resourceType instanceof ResourceTypeConfiguration) {
                 return $resourceType->getEntity();
             }
+
             return $value;
         });
     }
 
+    /**
+     * @return \Closure
+     */
     protected function getQueryBuilder()
     {
-        return function(EntityRepository $repo) {
+        return function (EntityRepository $repo) {
             return $repo->createQueryBuilder('e');
         };
     }

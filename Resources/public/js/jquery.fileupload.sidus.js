@@ -1,17 +1,17 @@
-(function($) {
-    $.fn.sidusFileUpload = function(options) {
-        var widgetAlert = function(widget, text) {
+(function ($) {
+    $.fn.sidusFileUpload = function (options) {
+        var widgetAlert = function (widget, text) {
             if (text) {
                 widget.find('.alert').html(text).show();
             } else {
                 widget.find('.alert').html('').hide();
             }
         };
-        
-        $(this).each(function() {
+
+        $(this).each(function () {
             var widget = $(this);
 
-            widget.find('.fileupload-file .close').click(function(e){
+            widget.find('.fileupload-file .close').click(function (e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 widget.find('.fileupload-file').hide();
@@ -21,8 +21,8 @@
 
             var defaultOptions = {
                 dataType: 'json',
-                add: function(e, data) {
-                    var size    = data.originalFiles[0]['size'];
+                add: function (e, data) {
+                    var size = data.originalFiles[0]['size'];
                     var maxsize = widget.find('input[type="file"]').attr('data-maxsize');
                     if (size == 0) {
                         widgetAlert(widget, 'File size is null');
@@ -37,14 +37,14 @@
                         data.submit();
                     });
                 },
-                start: function(e) {
+                start: function (e) {
                     widgetAlert(widget);
                     widget.find('.progress')
                         .show()
                         .find('.progress-bar')
                         .css('width', '0%');
                 },
-                done: function(e, data) {
+                done: function (e, data) {
                     widgetAlert(widget);
                     if (data.result.files && data.result.files[0] && data.result.files[0].error) {
                         var error = data.result.files[0].error;
@@ -63,11 +63,11 @@
                     widget.find('.progress').hide();
                     widget.find('input[type="hidden"]').val(file.id);
                 },
-                fail: function(e, data) {
+                fail: function (e, data) {
                     widget.find('.progress').hide();
                     widgetAlert(widget, 'An unknown error occurred during file upload');
                 },
-                progressall: function(e, data) {
+                progressall: function (e, data) {
                     var progress = parseInt(data.loaded / data.total * 100, 10);
                     widget.find('.progress-bar').css('width', progress + '%');
                 },

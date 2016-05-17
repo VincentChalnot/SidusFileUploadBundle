@@ -2,39 +2,13 @@
 
 namespace Sidus\FileUploadBundle\Utilities;
 
-
+/**
+ * Small utility class to handle binary size conversions
+ *
+ * @author Vincent Chalnot <vincent@sidus.fr>
+ */
 class BinarySizeUtility
 {
-    /**
-     * Unit table
-     *
-     * @return array
-     */
-    protected static function getBinarySizes() {
-        return [
-            // SI units
-            'o'   => 1,     // octet
-            'ko'  => 1e3,   // kilooctet
-            'mo'  => 1e6,   // mégaoctet
-            'go'  => 1e9,   // gigaoctet
-            'to'  => 1e12,  // téraoctet
-            'po'  => 1e15,  // pétaoctet
-            'eo'  => 1e18,  // exaoctet
-            'zo'  => 1e21,  // zettaoctet
-            'yo'  => 1e24,  // yottaoctet
-
-            // Additionnal binary units
-            'kio' => 2^10,  // kibioctet
-            'mio' => 2^20,  // mébioctet
-            'gio' => 2^30,  // gibioctet
-            'tio' => 2^40,  // tébioctet
-            'pio' => 2^50,  // pébioctet
-            'eio' => 2^60,  // exbioctet
-            'zio' => 2^70,  // zébioctet
-            'yio' => 2^80,  // yobioctet
-        ];
-    }
-
     /**
      * Takes a human-formatted binary size and return a number of octets
      *
@@ -51,33 +25,35 @@ class BinarySizeUtility
         }
         $oSize = $matches[1];
         if (!empty($matches[2])) {
-            $oSize .= '.' . $matches[2];
+            $oSize .= '.'.$matches[2];
         }
         $oSize = (float) $oSize;
         $unit = strtolower(empty($matches[3]) ? $fallbackUnits : $matches[3]);
         $byteMultiplier = 1;
         if ('b' === substr($unit, -1)) {
             $byteMultiplier = 8;
-            $unit = substr($unit, 0, -1) . 'o';
+            $unit = substr($unit, 0, -1).'o';
         }
         if (!array_key_exists($unit, self::getBinarySizes())) {
             throw new \UnexpectedValueException("Unexpected unit {$unit}");
         }
+
         return (int) ($oSize * self::getBinarySizes()[$unit] * $byteMultiplier);
     }
 
     /**
      * Return a binary size in a human readable form.
      *
-     * @param int $size number of octets
-     * @param int $decimals
+     * @param int    $size         number of octets
+     * @param int    $decimals
      * @param string $decPoint
      * @param string $thousandsSep
      * @param string $unitSep
      * @return string
      * @throws \UnexpectedValueException
      */
-    public static function format($size, $decimals = 2 , $decPoint = '.' , $thousandsSep = '', $unitSep = '') {
+    public static function format($size, $decimals = 2, $decPoint = '.', $thousandsSep = '', $unitSep = '')
+    {
         $output = $unit = null;
         foreach (self::getBinarySizes() as $unit => $divider) {
             $output = $size / $divider;
@@ -90,12 +66,13 @@ class BinarySizeUtility
         }
         $unit = $unit === 'o' ? 'o' : ucfirst($unit);
         $trimmed = rtrim(rtrim(number_format($output, $decimals, $decPoint, $thousandsSep), '0'), $decPoint);
-        $formatted = $trimmed . $unitSep . $unit;
+        $formatted = $trimmed.$unitSep.$unit;
+
         return str_replace(' ', utf8_encode(chr(160)), $formatted);
     }
 
     /**
-     * @param int $size
+     * @param int    $size
      * @param string $fallbackUnits
      * @return string
      * @throws \UnexpectedValueException
@@ -103,5 +80,36 @@ class BinarySizeUtility
     public static function reformat($size, $fallbackUnits = null)
     {
         return self::format(self::parse($size, $fallbackUnits));
+    }
+
+    /**
+     * Unit table
+     *
+     * @return array
+     */
+    protected static function getBinarySizes()
+    {
+        return [
+            // SI units
+            'o' => 1,     // octet
+            'ko' => 1e3,   // kilooctet
+            'mo' => 1e6,   // mégaoctet
+            'go' => 1e9,   // gigaoctet
+            'to' => 1e12,  // téraoctet
+            'po' => 1e15,  // pétaoctet
+            'eo' => 1e18,  // exaoctet
+            'zo' => 1e21,  // zettaoctet
+            'yo' => 1e24,  // yottaoctet
+
+            // Additionnal binary units
+            'kio' => 2 ^ 10,  // kibioctet
+            'mio' => 2 ^ 20,  // mébioctet
+            'gio' => 2 ^ 30,  // gibioctet
+            'tio' => 2 ^ 40,  // tébioctet
+            'pio' => 2 ^ 50,  // pébioctet
+            'eio' => 2 ^ 60,  // exbioctet
+            'zio' => 2 ^ 70,  // zébioctet
+            'yio' => 2 ^ 80,  // yobioctet
+        ];
     }
 }
