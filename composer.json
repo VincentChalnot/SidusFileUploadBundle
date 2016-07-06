@@ -24,7 +24,7 @@
         }
     },
     "require": {
-        "doctrine/doctrine-bundle": "~1.4",
+        "doctrine/doctrine-bundle": ">=1.2",
         "knplabs/knp-gaufrette-bundle": "~0.3",
         "oneup/uploader-bundle": "1.5.*",
         "blueimp/jquery-file-upload": "9.9.*"
