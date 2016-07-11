@@ -1,4 +1,29 @@
-(function ($) {
+
+/* jshint nomen:false */
+/* global define, require, window, document, location, Blob, FormData */
+
+(function (factory) {
+    'use strict';
+    if (typeof define === 'function' && define.amd) {
+        // Register as an anonymous AMD module:
+        define([
+            'jquery',
+            'jquery.ui.widget',
+            'jquery.file-upload'
+        ], factory);
+    } else if (typeof exports === 'object') {
+        // Node/CommonJS:
+        factory(
+            require('jquery'),
+            require('./vendor/jquery.ui.widget')
+        );
+    } else {
+        // Browser globals:
+        factory(window.jQuery);
+    }
+}(function ($) {
+    'use strict';
+
     $.fn.sidusFileUpload = function (options) {
         var widgetAlert = function (widget, text) {
             if (text) {
@@ -85,4 +110,4 @@
             widget.find('input[type="file"]').fileupload(defaultOptions);
         });
     };
-})(jQuery);
+}));
