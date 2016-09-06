@@ -31,7 +31,9 @@ services:
 
     sidus_file_upload.form.resource_type:
         class: '%sidus_file_upload.form.resource_type.class%'
-        arguments: ['@sidus_file_upload.resource.manager']
+        arguments:
+            - '@sidus_file_upload.resource.manager'
+            - '@doctrine'
         tags:
             - { name: form.type, alias: sidus_resource }
 
