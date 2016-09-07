@@ -158,6 +158,14 @@ class ResourceManager
     }
 
     /**
+     * @return ResourceTypeConfiguration[]
+     */
+    public function getResourceConfigurations()
+    {
+        return $this->resourceConfigurations;
+    }
+
+    /**
      * @param string $type
      * @return ResourceTypeConfiguration
      * @throws UnexpectedValueException

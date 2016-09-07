@@ -70,7 +70,7 @@ knp_gaufrette:
     adapters:
         resources:
             local:
-                directory: '%resources_dir%'
+                directory: '%resources_dir%/generated'
     filesystems:
         resources:
             adapter: resources

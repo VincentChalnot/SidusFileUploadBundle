@@ -52,7 +52,7 @@ class ResourceTypeConfiguration
     }
 
     /**
-     * @return Filesystem
+     * @return string
      */
     public function getFilesystemKey()
     {
