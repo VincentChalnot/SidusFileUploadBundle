@@ -14,9 +14,7 @@ use Sidus\FileUploadBundle\Model\ResourceInterface;
  */
 class ResourceSubscriber implements EventSubscriber
 {
-    /**
-     * @var ResourceManager
-     */
+    /** @var ResourceManager */
     protected $resourceManager;
 
     /**

@@ -61,18 +61,37 @@ class ResourceManager
 
     /**
      * Add an entry for Resource entity in database at each upload
+     * OR: find the already uploaded file based on it's hash
      *
      * @param GaufretteFile $file
      * @param string        $originalFilename
      * @param string        $type
+     *
+     * @throws FileNotFound
+     * @throws \InvalidArgumentException
+     * @throws UnexpectedValueException
+     * @throws \RuntimeException
+     *
      * @return ResourceInterface
-     * @throws \InvalidArgumentException|UnexpectedValueException
      */
     public function addFile(GaufretteFile $file, $originalFilename, $type = null)
     {
+        $fs = $this->getFilesystemForType($type);
+        $hash = $fs->checksum($file->getKey());
+        $resource = $this->findByHash($type, $hash);
+
+        if ($resource) {
+            $file->delete();
+
+            return $resource;
+        }
+
         $resource = $this->createByType($type)
             ->setOriginalFileName($originalFilename)
-            ->setFileName($file->getKey());
+            ->setFileName($file->getKey())
+            ->setHash($hash);
+
+        $this->updateResourceMetadata($resource, $file);
 
         $em = $this->doctrine->getManager();
         $em->persist($resource);
@@ -232,5 +251,32 @@ class ResourceManager
         $entity = $this->getResourceTypeConfiguration($type)->getEntity();
 
         return new $entity();
+    }
+
+    /**
+     * Allow to update the resource based on custom logic
+     * Should be handled in an event
+     *
+     * @param ResourceInterface $resource
+     * @param GaufretteFile     $file
+     */
+    protected function updateResourceMetadata(ResourceInterface $resource, GaufretteFile $file)
+    {
+        // Custom logic
+    }
+
+    /**
+     * @param string $type
+     * @param string $hash
+     *
+     * @throws \UnexpectedValueException
+     *
+     * @return ResourceInterface
+     */
+    protected function findByHash($type, $hash)
+    {
+        $class = $this->getResourceTypeConfiguration($type)->getEntity();
+
+        return $this->doctrine->getRepository($class)->findOneBy(['hash' => $hash]);
     }
 }

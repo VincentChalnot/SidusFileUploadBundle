@@ -16,7 +16,8 @@ interface ResourceInterface
 
     /**
      * @param string $originalFileName
-     * @return $this
+     *
+     * @return ResourceInterface
      */
     public function setOriginalFileName($originalFileName);
 
@@ -27,9 +28,22 @@ interface ResourceInterface
 
     /**
      * @param string $fileName
-     * @return $this
+     *
+     * @return ResourceInterface
      */
     public function setFileName($fileName);
+
+    /**
+     * @return string
+     */
+    public function getHash();
+
+    /**
+     * @param string $hash
+     *
+     * @return ResourceInterface
+     */
+    public function setHash($hash);
 
     /**
      * @return string

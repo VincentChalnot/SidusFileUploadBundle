@@ -29,6 +29,14 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
     protected $originalFileName;
 
     /**
+     * Checksum of the file
+     *
+     * @var string
+     * @ORM\Column(type="string", length=128, nullable=true)
+     */
+    protected $hash;
+
+    /**
      * @return string
      */
     public function getOriginalFileName()
@@ -38,7 +46,8 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
 
     /**
      * @param string $originalFileName
-     * @return $this
+     *
+     * @return ResourceInterface
      */
     public function setOriginalFileName($originalFileName)
     {
@@ -57,11 +66,32 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
 
     /**
      * @param string $fileName
-     * @return $this
+     *
+     * @return ResourceInterface
      */
     public function setFileName($fileName)
     {
         $this->fileName = $fileName;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    /**
+     * @param string $hash
+     *
+     * @return ResourceInterface
+     */
+    public function setHash($hash)
+    {
+        $this->hash = $hash;
 
         return $this;
     }

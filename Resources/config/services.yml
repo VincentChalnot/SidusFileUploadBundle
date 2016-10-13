@@ -1,4 +1,7 @@
 parameters:
+    # Oneup override
+    oneup_uploader.controller.blueimp.class: Sidus\FileUploadBundle\Controller\BlueimpController
+
     sidus_file_upload.resource.uploader.class: Sidus\FileUploadBundle\EventListener\ResourceUploader
     sidus_file_upload.resource.subscriber.class: Sidus\FileUploadBundle\EventListener\ResourceSubscriber
     sidus_file_upload.resource.manager.class: Sidus\FileUploadBundle\Manager\ResourceManager
