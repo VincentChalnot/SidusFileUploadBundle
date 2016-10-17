@@ -24,6 +24,31 @@ You will need to include jQuery in your project on your own.
 $ composer require sidus/file-upload-bundle
 ```
 
+Update your Kernel:
+
+```php
+<?php
+
+class AppKernel
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function registerBundles()
+    {
+        $bundles = [
+            // ...
+            new Oneup\UploaderBundle\OneupUploaderBundle(),
+            new Knp\Bundle\GaufretteBundle\KnpGaufretteBundle(),
+            new Sidus\FileUploadBundle\SidusFileUploadBundle(),
+            // ...
+        ];
+        // ...
+    }
+}
+```
+Note: The order is very important because we override some parameters frop Oneup.
+
 Additional configuration in your composer.json to expose the jquery-fileupload vendor in
 public directory of this bundle.
 

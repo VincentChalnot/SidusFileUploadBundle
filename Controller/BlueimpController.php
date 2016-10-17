@@ -6,6 +6,7 @@ use Oneup\UploaderBundle\Controller\BlueimpController as BaseBlueimpController;
 use Oneup\UploaderBundle\Uploader\File\FileInterface;
 use Oneup\UploaderBundle\Uploader\Response\ResponseInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\File\File as HttpFile;
 
 /**
  * BlueimpController override to allow manual upload of a file (through a service/command for example)
@@ -18,9 +19,10 @@ class BlueimpController extends BaseBlueimpController
     protected $request;
 
     /**
-     * @param FileInterface     $file
-     * @param ResponseInterface $response
-     * @param Request|null      $request
+     * @param FileInterface|HttpFile $file
+     * @param ResponseInterface      $response
+     * @param Request|null           $request
+     *
      * @return Resource
      * @throws \UnexpectedValueException
      */
