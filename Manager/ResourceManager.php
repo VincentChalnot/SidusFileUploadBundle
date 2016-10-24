@@ -80,13 +80,17 @@ class ResourceManager
         $hash = $fs->checksum($file->getKey());
         $resource = $this->findByHash($type, $hash);
 
-        if ($resource) {
-            $file->delete();
+        if ($resource) { // If resource already uploaded
+            if ($fs->has($resource->getFileName())) { // If the file is still there
+                $file->delete(); // Delete uploaded file (because we already have one)
 
-            return $resource;
+                return $resource;
+            }
+        } else {
+            $resource = $this->createByType($type);
         }
 
-        $resource = $this->createByType($type)
+        $resource
             ->setOriginalFileName($originalFilename)
             ->setFileName($file->getKey())
             ->setHash($hash);
