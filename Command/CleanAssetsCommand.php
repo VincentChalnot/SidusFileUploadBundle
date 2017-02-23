@@ -264,8 +264,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
             $qb = $repository
                 ->createQueryBuilder('e')
                 ->select("e.{$metadata->getSingleIdentifierColumnName()} AS id")
-                ->where("e.{$association['fieldName']} IS NOT NULL")
-            ;
+                ->where("e.{$association['fieldName']} IS NOT NULL");
 
             foreach ($qb->getQuery()->getArrayResult() as $result) {
                 $value = $result['id'];
@@ -283,8 +282,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
             $qb = $repository
                 ->createQueryBuilder('e')
                 ->select("r.{$metadata->getSingleIdentifierColumnName()} AS id")
-                ->innerJoin("e.{$association['fieldName']}", 'r')
-            ;
+                ->innerJoin("e.{$association['fieldName']}", 'r');
 
             foreach ($qb->getQuery()->getArrayResult() as $result) {
                 $value = $result['id'];
@@ -320,8 +318,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
             $qb = $repository
                 ->createQueryBuilder('e')
                 ->where("e.{$metadata->getSingleIdentifierColumnName()} NOT IN (:ids)")
-                ->setParameter('ids', $ids)
-            ;
+                ->setParameter('ids', $ids);
 
             $results = [];
             /** @var ResourceInterface $result */

@@ -1,4 +1,3 @@
-
 /* jshint nomen:false */
 /* global define, require, window, document, location, Blob, FormData */
 

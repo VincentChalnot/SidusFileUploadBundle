@@ -22,8 +22,7 @@ class ResourceRepository extends EntityRepository
     {
         $qb = $this
             ->createQueryBuilder('r')
-            ->select('r.fileName')
-        ;
+            ->select('r.fileName');
 
         $fileNames = new ArrayCollection();
         foreach ($qb->getQuery()->getArrayResult() as $item) {

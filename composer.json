@@ -17,10 +17,9 @@
             "role": "Developer"
         }
     ],
-    "target-dir": "Sidus/FileUploadBundle",
     "autoload": {
-        "psr-0": {
-            "Sidus\\FileUploadBundle": ""
+        "psr-4": {
+            "Sidus\\FileUploadBundle\\": ""
         }
     },
     "require": {

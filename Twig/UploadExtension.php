@@ -39,6 +39,7 @@ class UploadExtension extends Twig_Extension
      * @param ResourceInterface|null $resource
      * @param string                 $action
      * @param bool                   $absolute
+     *
      * @return string
      * @throws \Exception
      */

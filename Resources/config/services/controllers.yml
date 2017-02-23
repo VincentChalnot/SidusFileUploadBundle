@@ -1,0 +1,2 @@
+parameters:
+    oneup_uploader.controller.blueimp.class: Sidus\FileUploadBundle\Controller\BlueimpController

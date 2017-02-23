@@ -1,0 +1,10 @@
+services:
+    sidus_file_upload.resource.manager:
+        class: Sidus\FileUploadBundle\Manager\ResourceManager
+        arguments:
+            - '@doctrine'
+            - '@logger'
+            - '@knp_gaufrette.filesystem_map'
+            - '@router'
+        tags:
+            - { name: doctrine.event_listener, event: loadClassMetadata }

@@ -14,6 +14,7 @@ class BinarySizeUtility
      *
      * @param string $size
      * @param string $fallbackUnits
+     *
      * @return int
      * @throws \UnexpectedValueException
      */
@@ -44,11 +45,12 @@ class BinarySizeUtility
     /**
      * Return a binary size in a human readable form.
      *
-     * @param int    $size         number of octets
+     * @param int    $size number of octets
      * @param int    $decimals
      * @param string $decPoint
      * @param string $thousandsSep
      * @param string $unitSep
+     *
      * @return string
      * @throws \UnexpectedValueException
      */
@@ -74,6 +76,7 @@ class BinarySizeUtility
     /**
      * @param int    $size
      * @param string $fallbackUnits
+     *
      * @return string
      * @throws \UnexpectedValueException
      */

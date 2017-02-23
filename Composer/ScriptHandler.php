@@ -16,6 +16,7 @@ class ScriptHandler
      * Symlink JQuery File Upload plugin in the public directory
      *
      * @param Event $event
+     *
      * @throws \Exception
      */
     public static function symlinkJQueryFileUpload(Event $event)
@@ -45,9 +46,10 @@ class ScriptHandler
     /**
      * Checks symlink's existence.
      *
-     * @param string  $symlinkTarget The Target
-     * @param string  $symlinkName   The Name
-     * @param boolean $forceSymlink  Force to be a link or throw exception
+     * @param string $symlinkTarget The Target
+     * @param string $symlinkName   The Name
+     * @param boolean $forceSymlink Force to be a link or throw exception
+     *
      * @return boolean
      * @throws \Exception
      */
@@ -61,7 +63,9 @@ class ScriptHandler
             $linkTarget = readlink($symlinkName);
             if ($linkTarget !== $symlinkTarget) {
                 if (!$forceSymlink) {
-                    throw new \UnexpectedValueException("Symlink '{$symlinkName}' points to '{$linkTarget}' instead of '{$symlinkTarget}'");
+                    throw new \UnexpectedValueException(
+                        "Symlink '{$symlinkName}' points to '{$linkTarget}' instead of '{$symlinkTarget}'"
+                    );
                 }
                 unlink($symlinkName);
 

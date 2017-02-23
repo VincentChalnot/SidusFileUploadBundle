@@ -37,6 +37,7 @@ class ResourceSubscriber implements EventSubscriber
 
     /**
      * @param LifecycleEventArgs $args
+     *
      * @throws \UnexpectedValueException
      */
     public function preRemove(LifecycleEventArgs $args)

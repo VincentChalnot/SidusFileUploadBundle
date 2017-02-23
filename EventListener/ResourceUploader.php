@@ -28,6 +28,7 @@ class ResourceUploader
 
     /**
      * @param PostPersistEvent $event
+     *
      * @return AbstractResponse
      * @throws \UnexpectedValueException|\InvalidArgumentException
      */

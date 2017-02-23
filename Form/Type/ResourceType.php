@@ -60,34 +60,38 @@ class ResourceType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
         // The view must always be an ID
-        $builder->addViewTransformer(new CallbackTransformer(
-            function ($originalData) {
-                if (!$originalData instanceof ResourceInterface) {
-                    return $originalData; // Why is this condition necessary when submitting ? Makes no sense...
-                }
+        $builder->addViewTransformer(
+            new CallbackTransformer(
+                function ($originalData) {
+                    if (!$originalData instanceof ResourceInterface) {
+                        return $originalData; // Why is this condition necessary when submitting ? Makes no sense...
+                    }
 
-                return $this->getIdentifierValue($originalData);
-            },
-            function ($submittedData) {
-                return $submittedData;
-            }
-        ));
+                    return $this->getIdentifierValue($originalData);
+                },
+                function ($submittedData) {
+                    return $submittedData;
+                }
+            )
+        );
 
         // Model data must always be an entity
-        $builder->addModelTransformer(new CallbackTransformer(
-            function ($originalData) {
-                return $originalData;
-            },
-            function ($submittedData) use ($options) {
-                /** @var ObjectRepository $repository */
-                $repository = $options['repository'];
-                if (null === $submittedData || '' === $submittedData) {
-                    return null;
-                }
+        $builder->addModelTransformer(
+            new CallbackTransformer(
+                function ($originalData) {
+                    return $originalData;
+                },
+                function ($submittedData) use ($options) {
+                    /** @var ObjectRepository $repository */
+                    $repository = $options['repository'];
+                    if (null === $submittedData || '' === $submittedData) {
+                        return null;
+                    }
 
-                return $repository->find($submittedData);
-            }
-        ));
+                    return $repository->find($submittedData);
+                }
+            )
+        );
     }
 
     /**
@@ -100,46 +104,60 @@ class ResourceType extends AbstractType
 
     /**
      * @param OptionsResolver $resolver
+     *
      * @throws \Symfony\Component\OptionsResolver\Exception\AccessException
      * @throws \Symfony\Component\OptionsResolver\Exception\UndefinedOptionsException
      * @throws \UnexpectedValueException
      */
     public function configureOptions(OptionsResolver $resolver)
     {
-        $resolver->setRequired([
+        $resolver->setRequired(
+            [
+                'resource_type',
+            ]
+        );
+        $resolver->setDefaults(
+            [
+                'class' => null,
+                'repository' => null,
+                'compound' => false,
+                'error_bubbling' => false,
+            ]
+        );
+        $resolver->setNormalizer(
             'resource_type',
-        ]);
-        $resolver->setDefaults([
-            'class' => null,
-            'repository' => null,
-            'compound' => false,
-            'error_bubbling' => false,
-        ]);
-        $resolver->setNormalizer('resource_type', function (Options $options, $value) {
-            return $this->resourceManager->getResourceTypeConfiguration($value);
-        });
-        $resolver->setNormalizer('class', function (Options $options, $value) {
-            $resourceType = $options['resource_type'];
-            if (!$value && $resourceType instanceof ResourceTypeConfiguration) {
-                return $resourceType->getEntity();
+            function (Options $options, $value) {
+                return $this->resourceManager->getResourceTypeConfiguration($value);
             }
-
-            return $value;
-        });
-        $resolver->setNormalizer('repository', function (Options $options, $value) {
-            if ($value) {
-                if ($value instanceof ObjectRepository) {
-                    return $value;
+        );
+        $resolver->setNormalizer(
+            'class',
+            function (Options $options, $value) {
+                $resourceType = $options['resource_type'];
+                if (!$value && $resourceType instanceof ResourceTypeConfiguration) {
+                    return $resourceType->getEntity();
                 }
-                throw new \UnexpectedValueException("The 'repository' option must be an EntityRepository");
-            }
-            $class = $options['class'];
-            if (!$class) {
-                throw new \UnexpectedValueException("Missing option 'class' or 'repository'");
-            }
 
-            return $this->doctrine->getRepository($class);
-        });
+                return $value;
+            }
+        );
+        $resolver->setNormalizer(
+            'repository',
+            function (Options $options, $value) {
+                if ($value) {
+                    if ($value instanceof ObjectRepository) {
+                        return $value;
+                    }
+                    throw new \UnexpectedValueException("The 'repository' option must be an EntityRepository");
+                }
+                $class = $options['class'];
+                if (!$class) {
+                    throw new \UnexpectedValueException("Missing option 'class' or 'repository'");
+                }
+
+                return $this->doctrine->getRepository($class);
+            }
+        );
     }
 
     /**

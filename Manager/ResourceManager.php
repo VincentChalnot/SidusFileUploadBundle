@@ -42,9 +42,9 @@ class ResourceManager
     protected $router;
 
     /**
-     * @param Registry        $doctrine
+     * @param Registry $doctrine
      * @param LoggerInterface $logger
-     * @param FilesystemMap   $filesystemMap
+     * @param FilesystemMap $filesystemMap
      * @param RouterInterface $router
      */
     public function __construct(
@@ -109,6 +109,7 @@ class ResourceManager
      * DOES NOT REMOVE THE ENTITY
      *
      * @param ResourceInterface $resource
+     *
      * @throws UnexpectedValueException
      */
     public function removeResourceFile(ResourceInterface $resource)
@@ -117,7 +118,9 @@ class ResourceManager
         try {
             $fs->delete($resource->getFileName());
         } catch (\RuntimeException $e) {
-            $this->logger->warning("Tried to remove missing file {$resource->getFileName()} ({$resource->getOriginalFileName()})");
+            $this->logger->warning(
+                "Tried to remove missing file {$resource->getFileName()} ({$resource->getOriginalFileName()})"
+            );
         }
     }
 
@@ -127,6 +130,7 @@ class ResourceManager
      * @param ResourceInterface $resource
      * @param string            $action
      * @param bool              $absolute
+     *
      * @return string
      * @throws \Exception
      */
@@ -134,14 +138,19 @@ class ResourceManager
     {
         /** @noinspection Symfony2PhpRouteMissingInspection */
 
-        return $this->router->generate("sidus_file_upload.file.{$action}", [
-            'type' => $resource->getType(),
-            'filename' => $resource->getFileName(),
-        ], $absolute);
+        return $this->router->generate(
+            "sidus_file_upload.file.{$action}",
+            [
+                'type' => $resource->getType(),
+                'filename' => $resource->getFileName(),
+            ],
+            $absolute
+        );
     }
 
     /**
      * @param ResourceInterface $resource
+     *
      * @return Filesystem
      * @throws UnexpectedValueException
      */
@@ -152,6 +161,7 @@ class ResourceManager
 
     /**
      * @param string $type
+     *
      * @return Filesystem
      * @throws UnexpectedValueException
      */
@@ -166,6 +176,7 @@ class ResourceManager
      * Get the path for an uploaded file, does not check if file exists
      *
      * @param ResourceInterface $resource
+     *
      * @return GaufretteFile
      * @throws FileNotFound|UnexpectedValueException
      */
@@ -190,6 +201,7 @@ class ResourceManager
 
     /**
      * @param string $type
+     *
      * @return ResourceTypeConfiguration
      * @throws UnexpectedValueException
      */
@@ -217,6 +229,7 @@ class ResourceManager
      * Load inheritance mapping automatically if using Resource entity from this bundle
      *
      * @param LoadClassMetadataEventArgs $event
+     *
      * @throws MappingException
      */
     public function loadClassMetadata(LoadClassMetadataEventArgs $event)
@@ -247,6 +260,7 @@ class ResourceManager
 
     /**
      * @param $type
+     *
      * @return ResourceInterface
      * @throws UnexpectedValueException
      */
