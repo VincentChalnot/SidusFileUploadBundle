@@ -1,6 +1,9 @@
+parameters:
+    sidus_file_upload.resource.manager.class: Sidus\FileUploadBundle\Manager\ResourceManager
+
 services:
     sidus_file_upload.resource.manager:
-        class: Sidus\FileUploadBundle\Manager\ResourceManager
+        class: '%sidus_file_upload.resource.manager.class%'
         arguments:
             - '@doctrine'
             - '@logger'
