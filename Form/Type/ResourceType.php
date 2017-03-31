@@ -4,6 +4,7 @@ namespace Sidus\FileUploadBundle\Form\Type;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\Common\Persistence\ObjectRepository;
+use Doctrine\ORM\EntityManager;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Sidus\FileUploadBundle\Manager\ResourceManager;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
@@ -97,7 +98,7 @@ class ResourceType extends AbstractType
     /**
      * @return string
      */
-    public function getName()
+    public function getBlockPrefix()
     {
         return 'sidus_resource';
     }
@@ -170,7 +171,9 @@ class ResourceType extends AbstractType
      */
     protected function getIdentifierValue(ResourceInterface $originalData)
     {
-        $metadata = $this->doctrine->getManager()->getClassMetadata(get_class($originalData));
+        /** @var EntityManager $em */
+        $em = $this->doctrine->getManager();
+        $metadata = $em->getClassMetadata(get_class($originalData));
         $identifier = $metadata->getIdentifierValues($originalData);
         if (count($identifier) !== 1) {
             throw new \LogicException('ResourceInterface must have a single identifier (primary key)');
