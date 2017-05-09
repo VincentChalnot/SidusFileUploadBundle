@@ -6,8 +6,6 @@ use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\MappingException;
-use Gaufrette\Filesystem;
-use Knp\Bundle\GaufretteBundle\FilesystemMap;
 use Sensio\Bundle\GeneratorBundle\Command\Helper\QuestionHelper;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Sidus\FileUploadBundle\Entity\ResourceRepository;

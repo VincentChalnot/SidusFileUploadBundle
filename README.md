@@ -2,7 +2,7 @@ Sidus/FileUploadBundle
 ===========
 
 This bundle allows you to define Doctrine entities linked to a virtual filesystem entry
-through the Gaufrette storage layer.
+through the Flysystem storage layer.
 
 This means that when uploading a file, it will automatically create a corresponding entity
 in your database matching your resource type.
@@ -39,7 +39,7 @@ class AppKernel
         $bundles = [
             // ...
             new Oneup\UploaderBundle\OneupUploaderBundle(),
-            new Knp\Bundle\GaufretteBundle\KnpGaufretteBundle(),
+            new Oneup\FlysystemBundle\OneupFlysystemBundle(),
             new Sidus\FileUploadBundle\SidusFileUploadBundle(),
             // ...
         ];
@@ -55,12 +55,8 @@ public directory of this bundle.
 ```json
 {
     "scripts": {
-        "post-install-cmd": [
-            // Append this just after te clear-cache script
-            "Sidus\\FileUploadBundle\\Composer\\ScriptHandler::symlinkJQueryFileUpload"
-        ],
-        "post-update-cmd": [
-            // Append this just after te clear-cache script
+        "symfony-scripts": [
+            // Append this before the clear-cache script
             "Sidus\\FileUploadBundle\\Composer\\ScriptHandler::symlinkJQueryFileUpload"
         ]
     }
@@ -68,17 +64,9 @@ public directory of this bundle.
 
 ```
 
-Add the form template in twig.
+Configuration example for OneUploader using Flysystem with local filesystem.
 
-```yml
-twig:
-    form:
-        resources:
-            # ...
-            - 'SidusFileUploadBundle:Form:fields.html.twig'
-```
-
-Configuration example for OneUploader using gaufrette with local filesystem
+Note that in order for Sidus/FileUpload to work, the keys for the OneUploader, Flysystem and Sidus must match.
 
 ```yml
 # one uploader
@@ -87,37 +75,33 @@ oneup_uploader:
         document:
             frontend: blueimp
             storage:
-                type: gaufrette
-                filesystem: gaufrette.resources_filesystem
+                type: flysystem
+                filesystem: oneup_flysystem.document_filesystem
             max_size: 64000000
 
-knp_gaufrette:
+oneup_flysystem:
     adapters:
-        resources:
+        my_adapter:
             local:
-                directory: '%resources_dir%/generated'
+                directory: '%kernel.root_dir%/data/resources'
     filesystems:
-        resources:
-            adapter: resources
+        document:
+            adapter: my_adapter
 ```
+
+Note the reference in Oneup Uploader to the Flysystem filesystem :
+
+``` document -> oneup_flysystem.document_filesystem ```
 
 Now define your uploadable entities, being careful with the configuration keys
 
 ```yml
 sidus_file_upload:
-    filesystem_key: resources
     configurations:
-        document: # must match oneup_uploader mapping key
+        document: # This key will be the entrypoint to any fileupload form widget
             entity: MyNamespace\AssetBundle\Entity\Document
-
-```
-
-Somewhere in your configuration, for example in your parameters.yml if you plan to
-change this location depending of your installation.
-
-```yml
-parameters:
-    resources_dir: '%kernel.root_dir%/data/resources'
+            filesystem: document # Optional, defaults to configuration key
+            uploader: document # Optional, defaults to configuration key
 ```
 
 Add the upload routes to your routing:

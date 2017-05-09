@@ -2,10 +2,9 @@
 
 namespace Sidus\FileUploadBundle\Configuration;
 
-use Gaufrette\Filesystem;
-
 /**
- * Resource type configuration as a service, handles the link between a Doctrine entity and a filesystem
+ * Resource type configuration as a service, handles the link between a Doctrine entity,
+ * an upload endpoint and a filesystem
  *
  * @author Vincent Chalnot <vincent@sidus.fr>
  */
@@ -21,7 +20,7 @@ class ResourceTypeConfiguration
     protected $filesystemKey;
 
     /** @var string */
-    protected $endpoint;
+    protected $uploaderKey;
 
     /**
      * @param string $code
@@ -31,8 +30,8 @@ class ResourceTypeConfiguration
     {
         $this->code = $code;
         $this->entity = $configuration['entity'];
-        $this->filesystemKey = $configuration['filesystem_key'];
-        $this->endpoint = isset($configuration['endpoint']) ? $configuration['endpoint'] : $code;
+        $this->filesystemKey = $configuration['filesystem'] ?: $code;
+        $this->uploaderKey = $configuration['uploader'] ?: $code;
     }
 
     /**
@@ -62,8 +61,8 @@ class ResourceTypeConfiguration
     /**
      * @return string
      */
-    public function getEndpoint()
+    public function getUploaderKey()
     {
-        return $this->endpoint;
+        return $this->uploaderKey;
     }
 }
