@@ -13,12 +13,19 @@ use JsonSerializable;
 abstract class BaseResource implements ResourceInterface, JsonSerializable
 {
     /**
-     * Generated real file name
+     * @ORM\Id()
+     * @ORM\GeneratedValue(strategy="AUTO")
+     * @ORM\Column(type="integer")
+     */
+    protected $id;
+
+    /**
+     * File's path inside the filesystem
      *
      * @var string
-     * @ORM\Column(name="file_name", type="string", length=255, unique=true)
+     * @ORM\Column(name="path", type="string", length=255, unique=true)
      */
-    protected $fileName;
+    protected $path;
 
     /**
      * Original fileName from upload or import script
@@ -35,6 +42,22 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
      * @ORM\Column(type="string", length=128, nullable=true)
      */
     protected $hash;
+
+    /**
+     * @return int
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * @return int
+     */
+    public function getIdentifier()
+    {
+        return $this->getId();
+    }
 
     /**
      * @return string
@@ -59,19 +82,19 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
     /**
      * @return string
      */
-    public function getFileName()
+    public function getPath()
     {
-        return $this->fileName;
+        return $this->path;
     }
 
     /**
-     * @param string $fileName
+     * @param string $path
      *
      * @return ResourceInterface
      */
-    public function setFileName($fileName)
+    public function setPath($path)
     {
-        $this->fileName = $fileName;
+        $this->path = $path;
 
         return $this;
     }
@@ -101,7 +124,7 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
      */
     public function __toString()
     {
-        return (string) $this->getFileName();
+        return (string) $this->getPath();
     }
 
     /**
@@ -112,7 +135,8 @@ abstract class BaseResource implements ResourceInterface, JsonSerializable
     public function jsonSerialize()
     {
         return [
-            'fileName' => $this->getFileName(),
+            'identifier' => $this->getIdentifier(),
+            'path' => $this->getPath(),
             'originalFileName' => $this->getOriginalFileName(),
         ];
     }

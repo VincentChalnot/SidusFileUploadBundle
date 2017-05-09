@@ -17,39 +17,4 @@ use Sidus\FileUploadBundle\Model\BaseResource;
  */
 abstract class Resource extends BaseResource
 {
-    /**
-     * @ORM\Id()
-     * @ORM\GeneratedValue(strategy="AUTO")
-     * @ORM\Column(type="integer")
-     */
-    protected $id;
-
-    /**
-     * @return mixed
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * @param mixed $id
-     */
-    public function setId($id)
-    {
-        $this->id = $id;
-    }
-
-    /**
-     * Serialize automatically the entity when passed to json_encode
-     *
-     * @return array
-     */
-    public function jsonSerialize()
-    {
-        $json = parent::jsonSerialize();
-        $json['id'] = $this->getId();
-
-        return $json;
-    }
 }

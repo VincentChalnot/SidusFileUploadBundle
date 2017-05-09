@@ -14,6 +14,17 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  */
 class Configuration implements ConfigurationInterface
 {
+    /** @var string */
+    protected $root;
+
+    /**
+     * @param string $root
+     */
+    public function __construct($root = 'sidus_file_upload')
+    {
+        $this->root = $root;
+    }
+
     /**
      * {@inheritdoc}
      * @throws \RuntimeException
@@ -21,12 +32,10 @@ class Configuration implements ConfigurationInterface
     public function getConfigTreeBuilder()
     {
         $treeBuilder = new TreeBuilder();
-        $rootNode = $treeBuilder->root('sidus_file_upload');
+        $rootNode = $treeBuilder->root($this->root);
 
         $resourceDefinition = $rootNode
             ->children()
-            // More global configuration ?
-            ->scalarNode('filesystem_key')->isRequired()->end()
             ->arrayNode('configurations')
             ->useAttributeAsKey('code')
             ->prototype('array')
@@ -50,7 +59,7 @@ class Configuration implements ConfigurationInterface
     {
         $attributeDefinition
             ->scalarNode('entity')->isRequired()->end()
-            ->scalarNode('filesystem_key')->defaultNull()->end()
-            ->scalarNode('endpoint')->defaultNull()->end();
+            ->scalarNode('filesystem')->defaultNull()->end()
+            ->scalarNode('uploader')->defaultNull()->end();
     }
 }

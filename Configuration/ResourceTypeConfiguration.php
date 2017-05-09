@@ -20,7 +20,7 @@ class ResourceTypeConfiguration
     protected $filesystemKey;
 
     /** @var string */
-    protected $uploaderKey;
+    protected $endpoint;
 
     /**
      * @param string $code
@@ -31,7 +31,7 @@ class ResourceTypeConfiguration
         $this->code = $code;
         $this->entity = $configuration['entity'];
         $this->filesystemKey = $configuration['filesystem'] ?: $code;
-        $this->uploaderKey = $configuration['uploader'] ?: $code;
+        $this->endpoint = $configuration['uploader'] ?: $code;
     }
 
     /**
@@ -61,8 +61,8 @@ class ResourceTypeConfiguration
     /**
      * @return string
      */
-    public function getUploaderKey()
+    public function getEndpoint()
     {
-        return $this->uploaderKey;
+        return $this->endpoint;
     }
 }

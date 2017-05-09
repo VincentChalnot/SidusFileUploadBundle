@@ -14,21 +14,21 @@ use Doctrine\ORM\EntityRepository;
 class ResourceRepository extends EntityRepository
 {
     /**
-     * Find all "fileNames" in
+     * Find all "paths" in
      *
      * @return Collection
      */
-    public function getFileNames()
+    public function getPaths()
     {
         $qb = $this
             ->createQueryBuilder('r')
-            ->select('r.fileName');
+            ->select('r.path');
 
-        $fileNames = new ArrayCollection();
+        $paths = new ArrayCollection();
         foreach ($qb->getQuery()->getArrayResult() as $item) {
-            $fileNames[$item['fileName']] = $item['fileName'];
+            $paths[$item['path']] = $item['path'];
         }
 
-        return $fileNames;
+        return $paths;
     }
 }

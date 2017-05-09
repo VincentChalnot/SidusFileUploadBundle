@@ -2,9 +2,6 @@
 
 namespace Sidus\FileUploadBundle\Controller;
 
-use Gaufrette\Adapter\Local;
-use Gaufrette\Exception\FileNotFound;
-use Gaufrette\StreamMode;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,89 +17,59 @@ use UnexpectedValueException;
 class FileController extends Controller
 {
     /**
-     * @param string $type
-     * @param string $filename
+     * @param string     $type
+     * @param string|int $identifier
+     *
+     * @throws \Exception
      *
      * @return Response
-     * @throws \InvalidArgumentException
-     * @throws FileNotFound
-     * @throws UnexpectedValueException
      */
-    public function downloadAction($type, $filename)
+    public function downloadAction($type, $identifier)
     {
-        return $this->getStreamedResponse($type, $filename, true);
+        return $this->getStreamedResponse($type, $identifier);
     }
 
     /**
-     * @param      $type
-     * @param      $filename
-     * @param bool $download
+     * @param string     $type
+     * @param string|int $identifier
      *
      * @return StreamedResponse|NotFoundHttpException
+     * @throws \League\Flysystem\FileNotFoundException
      * @throws UnexpectedValueException
      * @throws \InvalidArgumentException
      */
-    protected function getStreamedResponse($type, $filename, $download = false)
+    protected function getStreamedResponse($type, $identifier)
     {
         $resourceManager = $this->get('sidus_file_upload.resource.manager');
-        $fs = $resourceManager->getFilesystemForType($type);
-        if (!$fs->has($filename)) {
-            return $this->createNotFoundException("File not found {$filename} ({$type})");
+        /** @var ResourceInterface $resource */
+        $resource = $resourceManager->getRepositoryForType($type)->find($identifier);
+
+        $fs = $resourceManager->getFilesystem($resource);
+        if (!$fs->has($resource->getPath())) {
+            return $this->createNotFoundException("File not found {$resource->getPath()} ({$type})");
         }
 
-        $originalFilename = $filename;
-        $resource = $this->getResource($type, $filename);
+        $originalFilename = $resource->getPath();
         if ($resource) {
             $originalFilename = $resource->getOriginalFileName();
         }
 
-        $stream = $fs->createStream($filename);
-        if (!$stream->open(new StreamMode('r'))) {
-            throw new UnexpectedValueException("Unable to open stream to file {$filename}");
-        }
+        $stream = $fs->readStream($resource->getPath());
 
         $response = new StreamedResponse(
             function () use ($stream) {
-                while (!$stream->eof()) {
-                    echo $stream->read(512);
+                while (!feof($stream)) {
+                    echo fread($stream, 512);
                 }
-                $stream->close();
+                fclose($stream);
             }, 200
         );
 
-        $disposition = 'attachment';
-        $adapter = $fs->getAdapter();
-        if ($adapter instanceof Local && !$download) {
-            $mimeType = $adapter->mimeType($filename);
-            if ($mimeType) {
-                $response->headers->set('Content-Type', $mimeType);
-                $disposition = 'inline';
-            }
-        }
         $response->headers->set(
             'Content-Disposition',
-            $response->headers->makeDisposition($disposition, $originalFilename)
+            $response->headers->makeDisposition('attachment', $originalFilename)
         );
 
         return $response;
-    }
-
-    /**
-     * @param string $type
-     * @param string $filename
-     *
-     * @return ResourceInterface|null
-     * @throws \UnexpectedValueException
-     */
-    protected function getResource($type, $filename)
-    {
-        $resourceManager = $this->get('sidus_file_upload.resource.manager');
-        $resourceConfiguration = $resourceManager->getResourceTypeConfiguration($type);
-
-        return $this->get('doctrine')->getRepository($resourceConfiguration->getEntity())->findOneBy(
-            [
-                'fileName' => $filename,
-            ]
-        );
     }
 }

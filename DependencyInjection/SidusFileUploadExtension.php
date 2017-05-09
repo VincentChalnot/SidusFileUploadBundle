@@ -15,8 +15,6 @@ use Symfony\Component\HttpKernel\DependencyInjection\Extension;
 class SidusFileUploadExtension extends Extension
 {
     /**
-     * Loads a specific configuration.
-     *
      * @param array            $configs   An array of configuration values
      * @param ContainerBuilder $container A ContainerBuilder instance
      *
@@ -29,6 +27,7 @@ class SidusFileUploadExtension extends Extension
         $loader->load('events.yml');
         $loader->load('forms.yml');
         $loader->load('managers.yml');
+        $loader->load('registry.yml');
         $loader->load('twig.yml');
 
         $configuration = new Configuration();
@@ -38,9 +37,6 @@ class SidusFileUploadExtension extends Extension
 
         // Automatically declare a service for each attribute configured
         foreach ($config['configurations'] as $code => $resourceConfiguration) {
-            if (!isset($resourceConfiguration['filesystem_key'])) {
-                $resourceConfiguration['filesystem_key'] = $config['filesystem_key'];
-            }
             $managerDefinition->addMethodCall('addResourceConfiguration', [$code, $resourceConfiguration]);
         }
     }

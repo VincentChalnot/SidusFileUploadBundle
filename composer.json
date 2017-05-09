@@ -25,6 +25,7 @@
     "require": {
         "doctrine/doctrine-bundle": ">=1.2",
         "oneup/flysystem-bundle": "~1.13",
+        "emgag/flysystem-hash": "~1.0",
         "oneup/uploader-bundle": "~1.7",
         "mopa/composer-bridge": "~1.3",
         "blueimp/jquery-file-upload": "~9.18"

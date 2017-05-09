@@ -7,7 +7,7 @@ services:
         arguments:
             - '@doctrine'
             - '@logger'
-            - '@knp_gaufrette.filesystem_map'
+            - '@sidus_file_upload.registry.filesystem'
             - '@router'
-        tags:
-            - { name: doctrine.event_listener, event: loadClassMetadata }
+#        tags:
+#            - { name: doctrine.event_listener, event: loadClassMetadata }

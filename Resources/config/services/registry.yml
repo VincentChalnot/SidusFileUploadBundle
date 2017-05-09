@@ -1,0 +1,3 @@
+services:
+    sidus_file_upload.registry.filesystem:
+        class: Sidus\FileUploadBundle\Registry\FilesystemRegistry

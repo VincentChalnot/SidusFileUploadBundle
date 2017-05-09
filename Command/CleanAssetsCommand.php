@@ -6,11 +6,13 @@ use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\MappingException;
+use League\Flysystem\FilesystemInterface;
 use Sensio\Bundle\GeneratorBundle\Command\Helper\QuestionHelper;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Sidus\FileUploadBundle\Entity\ResourceRepository;
 use Sidus\FileUploadBundle\Manager\ResourceManager;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
+use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\LogicException;
@@ -39,11 +41,11 @@ class CleanAssetsCommand extends ContainerAwareCommand
     /** @var Registry */
     protected $doctrine;
 
-    /** @var Filesystem[] */
+    /** @var FilesystemInterface[] */
     protected $fileSystems = [];
 
-    /** @var FilesystemMap */
-    protected $fileSystemMaps = [];
+    /** @var FilesystemRegistry */
+    protected $fileSystemRegistry = [];
 
     /** @var array */
     protected $extraFiles = [];
@@ -80,13 +82,12 @@ class CleanAssetsCommand extends ContainerAwareCommand
         // Check if this command can be launched ?
         $this->resourceManager = $this->getContainer()->get('sidus_file_upload.resource.manager');
         $this->doctrine = $this->getContainer()->get('doctrine');
-        $this->fileSystemMaps = $this->getContainer()->get('knp_gaufrette.filesystem_map');
+        $this->fileSystemRegistry = $this->getContainer()->get('sidus_file_upload.registry.filesystem');
 
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
             $fsKey = $resourceConfiguration->getFilesystemKey();
             if (!array_key_exists($fsKey, $this->fileSystems)) {
-                $fs = $this->fileSystemMaps->get($fsKey);
-                $this->fileSystems[$fsKey] = $fs;
+                $this->fileSystems[$fsKey] = $this->fileSystemRegistry->getFilesystem($fsKey);
             }
         }
     }
@@ -95,16 +96,9 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
-     * @throws InvalidArgumentException
-     * @throws \UnexpectedValueException
-     * @throws RuntimeException
-     * @throws LogicException
-     * @throws \RuntimeException
+     * @throws \Exception
      *
      * @return int|null
-     * @throws \BadMethodCallException
-     * @throws \InvalidArgumentException
-     * @throws MappingException
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
@@ -138,11 +132,10 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
-     * @throws \UnexpectedValueException
-     * @throws InvalidArgumentException
-     * @throws LogicException
-     * @throws RuntimeException
-     * @throws \RuntimeException
+     * @throws \League\Flysystem\FileNotFoundException
+     * @throws \Symfony\Component\Console\Exception\InvalidArgumentException
+     * @throws \Symfony\Component\Console\Exception\RuntimeException
+     * @throws \Symfony\Component\Console\Exception\LogicException
      */
     protected function executeDeleteExtra(InputInterface $input, OutputInterface $output)
     {
@@ -195,12 +188,13 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
+     * @throws \Symfony\Component\Console\Exception\RuntimeException
      * @throws \InvalidArgumentException
-     * @throws MappingException
-     * @throws InvalidArgumentException
-     * @throws LogicException
-     * @throws RuntimeException
      * @throws \BadMethodCallException
+     * @throws \Symfony\Component\Console\Exception\LogicException
+     * @throws \Symfony\Component\Console\Exception\InvalidArgumentException
+     * @throws \Doctrine\ORM\Mapping\MappingException
+     * @throws \RuntimeException
      */
     protected function executeDeleteOrphans(InputInterface $input, OutputInterface $output)
     {
@@ -242,6 +236,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @throws \BadMethodCallException
      *
      * @return array
+     * @throws \RuntimeException
      */
     protected function findAssociatedEntities(array $associations, array $reverseAssociations)
     {
@@ -338,7 +333,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
             foreach ($results as $result) {
                 if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                     $m = "<comment>Removing {$result->getType()}";
-                    $m .= " : {$result->getFileName()} - {$result->getOriginalFileName()}</comment>";
+                    $m .= " : {$result->getPath()} - {$result->getOriginalFileName()}</comment>";
                     $output->writeln($m);
                 }
                 if (!$input->getOption('simulate')) {
@@ -448,43 +443,30 @@ class CleanAssetsCommand extends ContainerAwareCommand
      */
     protected function computeFileSystemDifferences()
     {
-        $entityFileNameByFilesystems = [];
+        $entityPathByFilesystems = [];
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
             $fsKey = $resourceConfiguration->getFilesystemKey();
-            $fileNames = $this->getRepository($resourceConfiguration)->getFileNames()->toArray();
-            if (!array_key_exists($fsKey, $entityFileNameByFilesystems)) {
-                $entityFileNameByFilesystems[$fsKey] = $fileNames;
+            $paths = $this->getRepository($resourceConfiguration)->getPaths()->toArray();
+            if (!array_key_exists($fsKey, $entityPathByFilesystems)) {
+                $entityPathByFilesystems[$fsKey] = $paths;
             } else {
-                $entityFileNameByFilesystems[$fsKey] = array_merge($entityFileNameByFilesystems[$fsKey], $fileNames);
+                /** @noinspection SlowArrayOperationsInLoopInspection */
+                $entityPathByFilesystems[$fsKey] = array_merge($entityPathByFilesystems[$fsKey], $paths);
             }
         }
 
         foreach ($this->fileSystems as $fsKey => $fileSystem) {
-            $existingFileNames = [];
-            foreach ($fileSystem->keys() as $entityFileName) {
-                if ($entityFileName === '.gitkeep') {
+            $existingPaths = [];
+            foreach ($fileSystem->listContents() as $entityPath) {
+                if ($entityPath === '.gitkeep') {
                     continue;
                 }
-                $existingFileNames[$entityFileName] = $entityFileName;
+                $existingPaths[$entityPath] = $entityPath;
             }
-            $entityFileNames = $entityFileNameByFilesystems[$fsKey];
-            $this->extraFiles[$fsKey] = array_diff_key($existingFileNames, $entityFileNames);
-            $this->missingFiles[$fsKey] = array_diff_key($entityFileNames, $existingFileNames);
+            $entityPaths = $entityPathByFilesystems[$fsKey];
+            $this->extraFiles[$fsKey] = array_diff_key($existingPaths, $entityPaths);
+            $this->missingFiles[$fsKey] = array_diff_key($entityPaths, $existingPaths);
         }
-    }
-
-    /**
-     * @param ResourceTypeConfiguration $resourceConfiguration
-     *
-     * @throws \UnexpectedValueException
-     *
-     * @return array
-     */
-    protected function getFileNames(ResourceTypeConfiguration $resourceConfiguration)
-    {
-        $fs = $this->resourceManager->getFilesystemForType($resourceConfiguration->getCode());
-
-        return $fs->keys();
     }
 
     /**

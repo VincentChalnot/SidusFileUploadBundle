@@ -3,17 +3,14 @@
 namespace Sidus\FileUploadBundle\Manager;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
-use Doctrine\Common\Persistence\Event\LoadClassMetadataEventArgs;
-use Doctrine\ORM\Mapping\ClassMetadataInfo;
-use Doctrine\ORM\Mapping\MappingException;
-use Gaufrette\Exception\FileNotFound;
-use Gaufrette\Filesystem;
-use Knp\Bundle\GaufretteBundle\FilesystemMap;
-use Oneup\UploaderBundle\Uploader\File\GaufretteFile;
+use League\Flysystem\File;
+use League\Flysystem\FileNotFoundException;
+use League\Flysystem\FilesystemInterface;
 use Psr\Log\LoggerInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
-use Sidus\FileUploadBundle\Entity\Resource;
+use Sidus\FileUploadBundle\Entity\ResourceRepository;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
+use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
 use Symfony\Component\Routing\RouterInterface;
 use UnexpectedValueException;
 
@@ -24,8 +21,6 @@ use UnexpectedValueException;
  */
 class ResourceManager
 {
-    const BASE_RESOURCE = Resource::class;
-
     /** @var ResourceTypeConfiguration[] */
     protected $resourceConfigurations;
 
@@ -35,27 +30,27 @@ class ResourceManager
     /** @var LoggerInterface */
     protected $logger;
 
-    /** @var FilesystemMap */
-    protected $filesystemMap;
+    /** @var FilesystemRegistry */
+    protected $filesystemRegistry;
 
     /** @var RouterInterface */
     protected $router;
 
     /**
-     * @param Registry $doctrine
-     * @param LoggerInterface $logger
-     * @param FilesystemMap $filesystemMap
-     * @param RouterInterface $router
+     * @param Registry           $doctrine
+     * @param LoggerInterface    $logger
+     * @param FilesystemRegistry $filesystemRegistry
+     * @param RouterInterface    $router
      */
     public function __construct(
         Registry $doctrine,
         LoggerInterface $logger,
-        FilesystemMap $filesystemMap,
+        FilesystemRegistry $filesystemRegistry,
         RouterInterface $router
     ) {
         $this->doctrine = $doctrine;
         $this->logger = $logger;
-        $this->filesystemMap = $filesystemMap;
+        $this->filesystemRegistry = $filesystemRegistry;
         $this->router = $router;
     }
 
@@ -63,25 +58,25 @@ class ResourceManager
      * Add an entry for Resource entity in database at each upload
      * OR: find the already uploaded file based on it's hash
      *
-     * @param GaufretteFile $file
-     * @param string        $originalFilename
-     * @param string        $type
+     * @param File   $file
+     * @param string $originalFilename
+     * @param string $type
      *
-     * @throws FileNotFound
      * @throws \InvalidArgumentException
      * @throws UnexpectedValueException
      * @throws \RuntimeException
      *
      * @return ResourceInterface
      */
-    public function addFile(GaufretteFile $file, $originalFilename, $type = null)
+    public function addFile(File $file, $originalFilename, $type = null)
     {
         $fs = $this->getFilesystemForType($type);
-        $hash = $fs->checksum($file->getKey());
+
+        $hash = $fs->hash($file->getPath());
         $resource = $this->findByHash($type, $hash);
 
         if ($resource) { // If resource already uploaded
-            if ($fs->has($resource->getFileName())) { // If the file is still there
+            if ($fs->has($resource->getPath())) { // If the file is still there
                 $file->delete(); // Delete uploaded file (because we already have one)
 
                 return $resource;
@@ -92,7 +87,7 @@ class ResourceManager
 
         $resource
             ->setOriginalFileName($originalFilename)
-            ->setFileName($file->getKey())
+            ->setPath($file->getPath())
             ->setHash($hash);
 
         $this->updateResourceMetadata($resource, $file);
@@ -116,10 +111,10 @@ class ResourceManager
     {
         $fs = $this->getFilesystem($resource);
         try {
-            $fs->delete($resource->getFileName());
-        } catch (\RuntimeException $e) {
+            $fs->delete($resource->getPath());
+        } catch (FileNotFoundException $e) {
             $this->logger->warning(
-                "Tried to remove missing file {$resource->getFileName()} ({$resource->getOriginalFileName()})"
+                "Tried to remove missing file {$resource->getPath()} ({$resource->getOriginalFileName()})"
             );
         }
     }
@@ -128,21 +123,18 @@ class ResourceManager
      * Get the url of a "Resource" (for the web)
      *
      * @param ResourceInterface $resource
-     * @param string            $action
      * @param bool              $absolute
      *
      * @return string
      * @throws \Exception
      */
-    public function getFileUrl(ResourceInterface $resource, $action = 'download', $absolute = false)
+    public function getFileUrl(ResourceInterface $resource, $absolute = false)
     {
-        /** @noinspection Symfony2PhpRouteMissingInspection */
-
         return $this->router->generate(
-            "sidus_file_upload.file.{$action}",
+            'sidus_file_upload.file.download',
             [
                 'type' => $resource->getType(),
-                'filename' => $resource->getFileName(),
+                'identifier' => $resource->getIdentifier(),
             ],
             $absolute
         );
@@ -151,8 +143,9 @@ class ResourceManager
     /**
      * @param ResourceInterface $resource
      *
-     * @return Filesystem
      * @throws UnexpectedValueException
+     *
+     * @return FilesystemInterface
      */
     public function getFilesystem(ResourceInterface $resource)
     {
@@ -162,14 +155,15 @@ class ResourceManager
     /**
      * @param string $type
      *
-     * @return Filesystem
      * @throws UnexpectedValueException
+     *
+     * @return FilesystemInterface
      */
     public function getFilesystemForType($type)
     {
         $config = $this->getResourceTypeConfiguration($type);
 
-        return $this->filesystemMap->get($config->getFilesystemKey());
+        return $this->filesystemRegistry->getFilesystem($config->getFilesystemKey());
     }
 
     /**
@@ -177,18 +171,18 @@ class ResourceManager
      *
      * @param ResourceInterface $resource
      *
-     * @return GaufretteFile
-     * @throws FileNotFound|UnexpectedValueException
+     * @throws \UnexpectedValueException
+     *
+     * @return File
      */
     public function getFile(ResourceInterface $resource)
     {
         $fs = $this->getFilesystem($resource);
-        if (!$fs->has($resource->getFileName())) {
+        if (!$fs->has($resource->getPath())) {
             return false;
         }
-        $file = $fs->get($resource->getFileName());
 
-        return new GaufretteFile($file, $fs); // @70D0 Where do I get getStreamWrapperPrefix if needed ?
+        return $fs->get($resource->getPath());
     }
 
     /**
@@ -224,38 +218,18 @@ class ResourceManager
         $this->resourceConfigurations[$code] = $object;
     }
 
-
     /**
-     * Load inheritance mapping automatically if using Resource entity from this bundle
+     * @param string $type
      *
-     * @param LoadClassMetadataEventArgs $event
+     * @throws \UnexpectedValueException
      *
-     * @throws MappingException
+     * @return ResourceRepository
      */
-    public function loadClassMetadata(LoadClassMetadataEventArgs $event)
+    public function getRepositoryForType($type)
     {
-        $metadata = $event->getClassMetadata();
-        if (!$metadata instanceof ClassMetadataInfo) {
-            return;
-        }
-        $class = $metadata->getReflectionClass();
+        $class = $this->getResourceTypeConfiguration($type)->getEntity();
 
-        if ($class === null) {
-            $class = new \ReflectionClass($metadata->getName());
-        }
-
-        if ($class->getName() !== self::BASE_RESOURCE) {
-            return;
-        }
-
-        foreach ($this->resourceConfigurations as $resourceConfiguration) {
-            if (is_a($resourceConfiguration->getEntity(), self::BASE_RESOURCE, true)) {
-                $metadata->addDiscriminatorMapClass(
-                    $resourceConfiguration->getCode(),
-                    $resourceConfiguration->getEntity()
-                );
-            }
-        }
+        return $this->doctrine->getRepository($class);
     }
 
     /**
@@ -276,9 +250,9 @@ class ResourceManager
      * Should be handled in an event
      *
      * @param ResourceInterface $resource
-     * @param GaufretteFile     $file
+     * @param File              $file
      */
-    protected function updateResourceMetadata(ResourceInterface $resource, GaufretteFile $file)
+    protected function updateResourceMetadata(ResourceInterface $resource, File $file)
     {
         // Custom logic
     }
@@ -293,8 +267,6 @@ class ResourceManager
      */
     protected function findByHash($type, $hash)
     {
-        $class = $this->getResourceTypeConfiguration($type)->getEntity();
-
-        return $this->doctrine->getRepository($class)->findOneBy(['hash' => $hash]);
+        return $this->getRepositoryForType($type)->findOneBy(['hash' => $hash]);
     }
 }

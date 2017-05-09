@@ -4,7 +4,7 @@ namespace Sidus\FileUploadBundle\EventListener;
 
 use Exception;
 use Oneup\UploaderBundle\Event\PostPersistEvent;
-use Oneup\UploaderBundle\Uploader\File\GaufretteFile;
+use Oneup\UploaderBundle\Uploader\File\FlysystemFile;
 use Oneup\UploaderBundle\Uploader\Response\AbstractResponse;
 use Sidus\FileUploadBundle\Manager\ResourceManager;
 
@@ -29,18 +29,21 @@ class ResourceUploader
     /**
      * @param PostPersistEvent $event
      *
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \RuntimeException
+     *
      * @return AbstractResponse
-     * @throws \UnexpectedValueException|\InvalidArgumentException
      */
     public function onUpload(PostPersistEvent $event)
     {
         $file = $event->getFile();
-        if (!$file instanceof GaufretteFile) {
+        if (!$file instanceof FlysystemFile) {
             $class = get_class($file);
-            throw new \UnexpectedValueException("Only gaufrette files are supported, '{$class}' given");
+            throw new \UnexpectedValueException("Only Flysystem Files are supported, '{$class}' given");
         }
 
-        $originalFilename = $file->getName();
+        $originalFilename = $file->getBasename();
         try {
             // Couldn't find anything better with OneUp uploader...
             $originalFiles = $event->getRequest()->files->all();

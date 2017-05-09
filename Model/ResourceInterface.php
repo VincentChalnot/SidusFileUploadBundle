@@ -24,14 +24,14 @@ interface ResourceInterface
     /**
      * @return string
      */
-    public function getFileName();
+    public function getPath();
 
     /**
-     * @param string $fileName
+     * @param string $path
      *
      * @return ResourceInterface
      */
-    public function setFileName($fileName);
+    public function setPath($path);
 
     /**
      * @return string
@@ -49,4 +49,9 @@ interface ResourceInterface
      * @return string
      */
     public static function getType();
+
+    /**
+     * @return string|int
+     */
+    public function getIdentifier();
 }

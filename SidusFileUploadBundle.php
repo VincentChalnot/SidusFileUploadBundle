@@ -2,6 +2,7 @@
 
 namespace Sidus\FileUploadBundle;
 
+use Sidus\FileUploadBundle\DependencyInjection\Compiler\FilesystemCompilerPass;
 use Sidus\FileUploadBundle\DependencyInjection\Compiler\FormPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
@@ -17,5 +18,9 @@ class SidusFileUploadBundle extends Bundle
     public function build(ContainerBuilder $container)
     {
         $container->addCompilerPass(new FormPass());
+        $container->addCompilerPass(new FilesystemCompilerPass(
+            'sidus_file_upload.registry.filesystem',
+            'oneup_flysystem.filesystem'
+        ));
     }
 }
