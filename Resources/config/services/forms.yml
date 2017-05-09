@@ -5,4 +5,4 @@ services:
             - '@sidus_file_upload.resource.manager'
             - '@doctrine'
         tags:
-            - { name: form.type, alias: sidus_resource }
+            - { name: form.type }

@@ -9,5 +9,3 @@ services:
             - '@logger'
             - '@sidus_file_upload.registry.filesystem'
             - '@router'
-#        tags:
-#            - { name: doctrine.event_listener, event: loadClassMetadata }

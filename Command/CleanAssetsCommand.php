@@ -163,7 +163,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
                 if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                     $output->writeln("<comment>Removing file {$extraFile}</comment>");
                 }
-                if (!$input->getOption('simulate')) {
+                if (!$input->getOption('simulate') && $fs->has($extraFile)) {
                     $fs->delete($extraFile);
                 }
             }
@@ -457,7 +457,8 @@ class CleanAssetsCommand extends ContainerAwareCommand
 
         foreach ($this->fileSystems as $fsKey => $fileSystem) {
             $existingPaths = [];
-            foreach ($fileSystem->listContents() as $entityPath) {
+            foreach ($fileSystem->listContents() as $metadata) {
+                $entityPath = $metadata['path'];
                 if ($entityPath === '.gitkeep') {
                     continue;
                 }
