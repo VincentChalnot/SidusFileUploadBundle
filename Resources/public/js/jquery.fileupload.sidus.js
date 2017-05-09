@@ -85,7 +85,7 @@
                     widget.find('.fileupload-button').addClass('disabled');
                     widget.find('.fileupload-filename').html(file.originalFileName);
                     widget.find('.progress').hide();
-                    widget.find('input[type="hidden"]').val(file.id);
+                    widget.find('input[type="hidden"]').val(file.identifier);
                 },
                 fail: function (e, data) {
                     widget.find('.progress').hide();

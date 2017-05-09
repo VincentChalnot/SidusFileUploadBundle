@@ -3,6 +3,7 @@
 namespace Sidus\FileUploadBundle\Manager;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
+use Emgag\Flysystem\Hash\HashPlugin;
 use League\Flysystem\File;
 use League\Flysystem\FileNotFoundException;
 use League\Flysystem\FilesystemInterface;
@@ -71,7 +72,9 @@ class ResourceManager
     public function addFile(File $file, $originalFilename, $type = null)
     {
         $fs = $this->getFilesystemForType($type);
+        $fs->addPlugin(new HashPlugin());
 
+        /** @noinspection PhpUndefinedMethodInspection */
         $hash = $fs->hash($file->getPath());
         $resource = $this->findByHash($type, $hash);
 
