@@ -34,6 +34,8 @@ class FileController extends Controller
      * @param string|int $identifier
      *
      * @return StreamedResponse|NotFoundHttpException
+     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
+     * @throws \RuntimeException
      * @throws \League\Flysystem\FileNotFoundException
      * @throws UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -46,7 +48,7 @@ class FileController extends Controller
 
         $fs = $resourceManager->getFilesystem($resource);
         if (!$fs->has($resource->getPath())) {
-            return $this->createNotFoundException("File not found {$resource->getPath()} ({$type})");
+            throw $this->createNotFoundException("File not found {$resource->getPath()} ({$type})");
         }
 
         $originalFilename = $resource->getPath();
@@ -55,6 +57,9 @@ class FileController extends Controller
         }
 
         $stream = $fs->readStream($resource->getPath());
+        if (!$stream) {
+            throw new \RuntimeException("Unable to open stream to resource {$resource->getPath()}");
+        }
 
         $response = new StreamedResponse(
             function () use ($stream) {
