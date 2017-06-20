@@ -83,7 +83,7 @@ oneup_flysystem:
     adapters:
         my_adapter:
             local:
-                directory: '%kernel.root_dir%/data/resources'
+                directory: '%kernel.root_dir%/../var/data/resources'
     filesystems:
         document:
             adapter: my_adapter

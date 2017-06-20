@@ -56,6 +56,7 @@ class FileController extends Controller
             $originalFilename = $resource->getOriginalFileName();
         }
 
+
         $stream = $fs->readStream($resource->getPath());
         if (!$stream) {
             throw new \RuntimeException("Unable to open stream to resource {$resource->getPath()}");
@@ -72,9 +73,33 @@ class FileController extends Controller
 
         $response->headers->set(
             'Content-Disposition',
-            $response->headers->makeDisposition('attachment', $originalFilename)
+            $response->headers->makeDisposition(
+                'attachment',
+                $originalFilename,
+                $this->transliterate($originalFilename)
+            )
         );
 
         return $response;
+    }
+
+    /**
+     * @param string $originalFilename
+     *
+     * @return string
+     */
+    protected function transliterate($originalFilename)
+    {
+        $transliterator = \Transliterator::create('NFD; [:Nonspacing Mark:] Remove; NFC');
+        $string = $transliterator->transliterate($originalFilename);
+
+        return trim(
+            preg_replace(
+                '/[^\x20-\x7E]/',
+                '_',
+                $string
+            ),
+            '_'
+        );
     }
 }
