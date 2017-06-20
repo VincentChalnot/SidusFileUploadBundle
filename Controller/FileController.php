@@ -22,6 +22,7 @@ class FileController extends Controller
     /**
      * @param string $type
      * @param string $filename
+     *
      * @return Response
      * @throws \InvalidArgumentException
      * @throws FileNotFound
@@ -36,6 +37,7 @@ class FileController extends Controller
      * @param      $type
      * @param      $filename
      * @param bool $download
+     *
      * @return StreamedResponse|NotFoundHttpException
      * @throws UnexpectedValueException
      * @throws \InvalidArgumentException
@@ -59,12 +61,14 @@ class FileController extends Controller
             throw new UnexpectedValueException("Unable to open stream to file {$filename}");
         }
 
-        $response = new StreamedResponse(function () use ($stream) {
-            while (!$stream->eof()) {
-                echo $stream->read(512);
-            }
-            $stream->close();
-        }, 200);
+        $response = new StreamedResponse(
+            function () use ($stream) {
+                while (!$stream->eof()) {
+                    echo $stream->read(512);
+                }
+                $stream->close();
+            }, 200
+        );
 
         $disposition = 'attachment';
         $adapter = $fs->getAdapter();
@@ -77,7 +81,11 @@ class FileController extends Controller
         }
         $response->headers->set(
             'Content-Disposition',
-            $response->headers->makeDisposition($disposition, $originalFilename)
+            $response->headers->makeDisposition(
+                $disposition,
+                $originalFilename,
+                $this->transliterate($originalFilename)
+            )
         );
 
         return $response;
@@ -86,6 +94,7 @@ class FileController extends Controller
     /**
      * @param string $type
      * @param string $filename
+     *
      * @return ResourceInterface|null
      * @throws \UnexpectedValueException
      */
@@ -94,8 +103,30 @@ class FileController extends Controller
         $resourceManager = $this->get('sidus_file_upload.resource.manager');
         $resourceConfiguration = $resourceManager->getResourceTypeConfiguration($type);
 
-        return $this->get('doctrine')->getRepository($resourceConfiguration->getEntity())->findOneBy([
-            'fileName' => $filename,
-        ]);
+        return $this->get('doctrine')->getRepository($resourceConfiguration->getEntity())->findOneBy(
+            [
+                'fileName' => $filename,
+            ]
+        );
+    }
+
+    /**
+     * @param string $originalFilename
+     *
+     * @return string
+     */
+    protected function transliterate($originalFilename)
+    {
+        $transliterator = \Transliterator::create('NFD; [:Nonspacing Mark:] Remove; NFC');
+        $string = $transliterator->transliterate($originalFilename);
+
+        return trim(
+            preg_replace(
+                '/[^\x20-\x7E]/',
+                '_',
+                $string
+            ),
+            '_'
+        );
     }
 }
