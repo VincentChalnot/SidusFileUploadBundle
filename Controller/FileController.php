@@ -72,11 +72,13 @@ class FileController extends Controller
 
         $disposition = 'attachment';
         $adapter = $fs->getAdapter();
-        if ($adapter instanceof Local && !$download) {
+        if ($adapter instanceof Local) {
             $mimeType = $adapter->mimeType($filename);
             if ($mimeType) {
                 $response->headers->set('Content-Type', $mimeType);
-                $disposition = 'inline';
+                if (!$download) {
+                    $disposition = 'inline';
+                }
             }
         }
         $response->headers->set(
