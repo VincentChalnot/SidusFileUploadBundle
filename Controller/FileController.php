@@ -79,6 +79,7 @@ class FileController extends Controller
                 $this->transliterate($originalFilename)
             )
         );
+        $response->headers->set('Content-Type', $fs->getMimetype($resource->getPath()));
 
         return $response;
     }
