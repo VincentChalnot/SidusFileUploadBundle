@@ -5,6 +5,7 @@ namespace Sidus\FileUploadBundle\Controller;
 use Oneup\UploaderBundle\Controller\BlueimpController as BaseBlueimpController;
 use Oneup\UploaderBundle\Uploader\File\FileInterface;
 use Oneup\UploaderBundle\Uploader\Response\ResponseInterface;
+use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\File\File as HttpFile;
 
@@ -23,8 +24,9 @@ class BlueimpController extends BaseBlueimpController
      * @param ResponseInterface      $response
      * @param Request|null           $request
      *
-     * @return Resource
      * @throws \UnexpectedValueException
+     *
+     * @return ResourceInterface
      */
     public function handleManualUpload($file, ResponseInterface $response, Request $request = null)
     {
