@@ -3,9 +3,12 @@
 namespace Sidus\FileUploadBundle\Command;
 
 use Doctrine\Bundle\DoctrineBundle\Registry;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\MappingException;
+use League\Flysystem\AdapterInterface;
+use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemInterface;
 use Sensio\Bundle\GeneratorBundle\Command\Helper\QuestionHelper;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
@@ -41,8 +44,11 @@ class CleanAssetsCommand extends ContainerAwareCommand
     /** @var Registry */
     protected $doctrine;
 
-    /** @var FilesystemInterface[] */
-    protected $fileSystems = [];
+    /** @var array */
+    protected $adaptersByResourceType = [];
+
+    /** @var AdapterInterface[] */
+    protected $adapters = [];
 
     /** @var FilesystemRegistry */
     protected $fileSystemRegistry = [];
@@ -85,10 +91,18 @@ class CleanAssetsCommand extends ContainerAwareCommand
         $this->fileSystemRegistry = $this->getContainer()->get('sidus_file_upload.registry.filesystem');
 
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
-            $fsKey = $resourceConfiguration->getFilesystemKey();
-            if (!array_key_exists($fsKey, $this->fileSystems)) {
-                $this->fileSystems[$fsKey] = $this->fileSystemRegistry->getFilesystem($fsKey);
+            $filesystem = $this->resourceManager->getFilesystemForType($resourceConfiguration->getCode());
+            if (!method_exists($filesystem, 'getAdapter')) {
+                // This is due to the fact that the Filesystem layer does not differenciate it's own files from other
+                // files owned by a different filesystem but with the same adapter
+                // In the end if we want to make sure that we don't delete files from an other filesystem using the
+                // same adapter we need to get to the adapter
+                throw new \UnexpectedValueException('Filesystem must allow access to adapter');
             }
+            $adapter = $filesystem->getAdapter();
+            $adapterReference = spl_object_hash($adapter);
+            $this->adapters[$adapterReference] = $adapter;
+            $this->adaptersByResourceType[$resourceConfiguration->getCode()] = $adapterReference;
         }
     }
 
@@ -103,7 +117,8 @@ class CleanAssetsCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $executeAll = true;
-        if ($input->getOption('delete-extra') || $input->getOption('delete-orphans')
+        if ($input->getOption('delete-extra')
+            || $input->getOption('delete-orphans')
             || $input->getOption('delete-missing')
         ) {
             $executeAll = false;
@@ -126,13 +141,14 @@ class CleanAssetsCommand extends ContainerAwareCommand
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $output->writeln('<info>Success</info>');
         }
+
+        return 0;
     }
 
     /**
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
-     * @throws \League\Flysystem\FileNotFoundException
      * @throws \Symfony\Component\Console\Exception\InvalidArgumentException
      * @throws \Symfony\Component\Console\Exception\RuntimeException
      * @throws \Symfony\Component\Console\Exception\LogicException
@@ -140,36 +156,44 @@ class CleanAssetsCommand extends ContainerAwareCommand
     protected function executeDeleteExtra(InputInterface $input, OutputInterface $output)
     {
         /** @var array $extraFiles */
-        foreach ($this->extraFiles as $fsKey => $extraFiles) {
-            $count = count($extraFiles);
+        foreach ($this->extraFiles as $adapterReference => $extraFiles) {
+            $count = \count($extraFiles);
             $files = implode(', ', $extraFiles);
             $m = '<error>NO FILE REMOVED : Please use the --force option in non-interactive mode to prevent';
             $m .= ' any mistake</error>';
 
+            $configCodes = [];
+            foreach ($this->adaptersByResourceType as $configCode => $adapterRef2) {
+                if ($adapterReference === $adapterRef2) {
+                    $configCodes[] = $configCode;
+                }
+            }
+            $configs = implode("', '", $configCodes);
+
             $messages = [
-                'no_item' => "<comment>No file to remove in fs '{$fsKey}'</comment>",
-                'info' => "<comment>The following files will be deleted in fs '{$fsKey}': {$files}</comment>",
+                'no_item' => "<comment>No file to remove in fs '{$configs}'</comment>",
+                'info' => "<comment>The following files will be deleted in fs '{$configs}': {$files}</comment>",
                 'skipping' => '<comment>Skipping file removal.</comment>',
                 'error' => $m,
-                'question' => "Are you sure you want to remove {$count} files in fs '{$fsKey}' ? y/[n]\n",
+                'question' => "Are you sure you want to remove {$count} files in fs '{$configs}' ? y/[n]\n",
             ];
 
             if (!$this->askQuestion($input, $output, $extraFiles, $messages)) {
                 continue;
             }
 
-            $fs = $this->fileSystems[$fsKey];
+            $adapter = $this->adapters[$adapterReference];
             foreach ($extraFiles as $extraFile) {
                 if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
                     $output->writeln("<comment>Removing file {$extraFile}</comment>");
                 }
-                if (!$input->getOption('simulate') && $fs->has($extraFile)) {
-                    $fs->delete($extraFile);
+                if (!$input->getOption('simulate') && $adapter->has($extraFile)) {
+                    $adapter->delete($extraFile);
                 }
             }
 
             if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-                $output->writeln("<comment>{$count} files deleted in fs '{$fsKey}'</comment>");
+                $output->writeln("<comment>{$count} files deleted in fs '{$configs}'</comment>");
             }
         }
     }
@@ -300,6 +324,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
      */
     protected function removeOrphanEntities(InputInterface $input, OutputInterface $output, array $foundEntities)
     {
+        /** @var EntityManager $em */
         $em = $this->doctrine->getManager();
 
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
@@ -337,13 +362,15 @@ class CleanAssetsCommand extends ContainerAwareCommand
                     $output->writeln($m);
                 }
                 if (!$input->getOption('simulate')) {
-                    $em->remove($result);
+                    try {
+                        $em->remove($result);
+                        $em->flush($result);
+                    } catch (\Exception $e) {
+                        $m = "<error>An error occured while trying to delete #{$result->getIdentifier()} ";
+                        $m .= "{$result->getOriginalFileName()}: {$e->getMessage()}</error>";
+                        $output->writeln($m);
+                    }
                 }
-            }
-
-            /** @noinspection DisconnectedForeachInstructionInspection */
-            if (!$input->getOption('simulate')) {
-                $em->flush();
             }
         }
     }
@@ -370,7 +397,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
         $error = '<error>NO ENTITY REMOVED : Please use the --force option in non-interactive mode to prevent';
         $error .= ' any mistake</error>';
 
-        $count = count($results);
+        $count = \count($results);
 
         return [
             'no_item' => "<comment>No entity to remove of class '{$className}'</comment>",
@@ -399,7 +426,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
         array $items,
         array $messages
     ) {
-        $count = count($items);
+        $count = \count($items);
         if ($count === 0) {
             if (isset($messages['no_item']) && $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $output->writeln($messages['no_item']);
@@ -440,33 +467,35 @@ class CleanAssetsCommand extends ContainerAwareCommand
 
     /**
      * Compute de differences between what's in the storage system and what's in the database
+     *
+     * @throws \UnexpectedValueException
      */
     protected function computeFileSystemDifferences()
     {
         $entityPathByFilesystems = [];
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
-            $fsKey = $resourceConfiguration->getFilesystemKey();
             $paths = $this->getRepository($resourceConfiguration)->getPaths()->toArray();
-            if (!array_key_exists($fsKey, $entityPathByFilesystems)) {
-                $entityPathByFilesystems[$fsKey] = $paths;
+            $adapterReference = $this->adaptersByResourceType[$resourceConfiguration->getCode()];
+            if (!array_key_exists($adapterReference, $entityPathByFilesystems)) {
+                $entityPathByFilesystems[$adapterReference] = $paths;
             } else {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
-                $entityPathByFilesystems[$fsKey] = array_merge($entityPathByFilesystems[$fsKey], $paths);
+                $entityPathByFilesystems[$adapterReference] = array_merge($entityPathByFilesystems[$adapterReference], $paths);
             }
         }
 
-        foreach ($this->fileSystems as $fsKey => $fileSystem) {
+        foreach ($this->adapters as $adapterReference => $adapter) {
             $existingPaths = [];
-            foreach ($fileSystem->listContents() as $metadata) {
+            foreach ($adapter->listContents() as $metadata) {
                 $entityPath = $metadata['path'];
                 if ($entityPath === '.gitkeep') {
                     continue;
                 }
                 $existingPaths[$entityPath] = $entityPath;
             }
-            $entityPaths = $entityPathByFilesystems[$fsKey];
-            $this->extraFiles[$fsKey] = array_diff_key($existingPaths, $entityPaths);
-            $this->missingFiles[$fsKey] = array_diff_key($entityPaths, $existingPaths);
+            $entityPaths = $entityPathByFilesystems[$adapterReference];
+            $this->extraFiles[$adapterReference] = array_diff_key($existingPaths, $entityPaths);
+            $this->missingFiles[$adapterReference] = array_diff_key($entityPaths, $existingPaths);
         }
     }
 
