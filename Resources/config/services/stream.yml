@@ -1,0 +1,5 @@
+services:
+    sidus_file_upload.file_streamer:
+        class: Sidus\FileUploadBundle\Stream\FileStreamer
+        arguments:
+            - '@sidus_file_upload.resource.manager'

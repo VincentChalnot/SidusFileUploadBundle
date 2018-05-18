@@ -28,6 +28,7 @@ class SidusFileUploadExtension extends Extension
         $loader->load('forms.yml');
         $loader->load('managers.yml');
         $loader->load('registry.yml');
+        $loader->load('stream.yml');
         $loader->load('twig.yml');
 
         $configuration = new Configuration();
