@@ -2,23 +2,24 @@
 
 namespace Sidus\FileUploadBundle\Stream;
 
-use Sidus\FileUploadBundle\Manager\ResourceManager;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
+use Sidus\FileUploadBundle\Utilities\FilenameTransliterator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Provides a simple way to stream file to client
  */
-class FileStreamer
+class FileStreamer implements FileStreamerInterface
 {
-    /** @var ResourceManager */
+    /** @var ResourceManagerInterface */
     protected $resourceManager;
 
     /**
-     * @param ResourceManager $resourceManager
+     * @param ResourceManagerInterface $resourceManager
      */
-    public function __construct(ResourceManager $resourceManager)
+    public function __construct(ResourceManagerInterface $resourceManager)
     {
         $this->resourceManager = $resourceManager;
     }
@@ -63,31 +64,11 @@ class FileStreamer
             $response->headers->makeDisposition(
                 'attachment',
                 $originalFilename,
-                $this->transliterateFilename($originalFilename)
+                FilenameTransliterator::transliterateFilename($originalFilename)
             )
         );
         $response->headers->set('Content-Type', $fs->getMimetype($resource->getPath()));
 
         return $response;
-    }
-
-    /**
-     * @param string $originalFilename
-     *
-     * @return string
-     */
-    public function transliterateFilename($originalFilename)
-    {
-        $transliterator = \Transliterator::create('NFD; [:Nonspacing Mark:] Remove; NFC');
-        $string = $transliterator->transliterate($originalFilename);
-
-        return trim(
-            preg_replace(
-                '/[^\x20-\x7E]/',
-                '_',
-                $string
-            ),
-            '_'
-        );
     }
 }

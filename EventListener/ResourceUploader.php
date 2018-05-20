@@ -6,7 +6,7 @@ use Exception;
 use Oneup\UploaderBundle\Event\PostPersistEvent;
 use Oneup\UploaderBundle\Uploader\File\FlysystemFile;
 use Oneup\UploaderBundle\Uploader\Response\AbstractResponse;
-use Sidus\FileUploadBundle\Manager\ResourceManager;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 
 /**
  * Handle the upload event, creating the corresponding entity and returning it's reference
@@ -15,13 +15,13 @@ use Sidus\FileUploadBundle\Manager\ResourceManager;
  */
 class ResourceUploader
 {
-    /** @var ResourceManager */
+    /** @var ResourceManagerInterface */
     protected $resourceManager;
 
     /**
-     * @param ResourceManager $resourceManager
+     * @param ResourceManagerInterface $resourceManager
      */
-    public function __construct(ResourceManager $resourceManager)
+    public function __construct(ResourceManagerInterface $resourceManager)
     {
         $this->resourceManager = $resourceManager;
     }

@@ -15,8 +15,9 @@ class BinarySizeUtility
      * @param string $size
      * @param string $fallbackUnits
      *
-     * @return int
      * @throws \UnexpectedValueException
+     *
+     * @return int
      */
     public static function parse($size, $fallbackUnits = null)
     {
@@ -45,14 +46,15 @@ class BinarySizeUtility
     /**
      * Return a binary size in a human readable form.
      *
-     * @param int    $size number of octets
+     * @param int    $size         number of octets
      * @param int    $decimals
      * @param string $decPoint
      * @param string $thousandsSep
      * @param string $unitSep
      *
-     * @return string
      * @throws \UnexpectedValueException
+     *
+     * @return string
      */
     public static function format($size, $decimals = 2, $decPoint = '.', $thousandsSep = '', $unitSep = '')
     {
@@ -77,8 +79,9 @@ class BinarySizeUtility
      * @param int    $size
      * @param string $fallbackUnits
      *
-     * @return string
      * @throws \UnexpectedValueException
+     *
+     * @return string
      */
     public static function reformat($size, $fallbackUnits = null)
     {

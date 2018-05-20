@@ -2,11 +2,11 @@
 
 namespace Sidus\FileUploadBundle\Form\Type;
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
+use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\Common\Persistence\ObjectRepository;
 use Doctrine\ORM\EntityManager;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
-use Sidus\FileUploadBundle\Manager\ResourceManager;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
@@ -23,17 +23,17 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class ResourceType extends AbstractType
 {
-    /** @var ResourceManager */
+    /** @var ResourceManagerInterface */
     protected $resourceManager;
 
-    /** @var Registry */
+    /** @var ManagerRegistry */
     protected $doctrine;
 
     /**
-     * @param ResourceManager $resourceManager
-     * @param Registry        $doctrine
+     * @param ResourceManagerInterface $resourceManager
+     * @param ManagerRegistry          $doctrine
      */
-    public function __construct(ResourceManager $resourceManager, Registry $doctrine)
+    public function __construct(ResourceManagerInterface $resourceManager, ManagerRegistry $doctrine)
     {
         $this->resourceManager = $resourceManager;
         $this->doctrine = $doctrine;

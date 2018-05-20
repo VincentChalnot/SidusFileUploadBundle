@@ -1,5 +1,9 @@
 services:
-    sidus_file_upload.file_streamer:
+    Sidus\FileUploadBundle\Stream\FileStreamerInterface:
+        alias: Sidus\FileUploadBundle\Stream\FileStreamer
+
+    Sidus\FileUploadBundle\Stream\FileStreamer:
         class: Sidus\FileUploadBundle\Stream\FileStreamer
+        public: false
         arguments:
-            - '@sidus_file_upload.resource.manager'
+            - '@Sidus\FileUploadBundle\Manager\ResourceManagerInterface'

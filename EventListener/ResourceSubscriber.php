@@ -4,7 +4,7 @@ namespace Sidus\FileUploadBundle\EventListener;
 
 use Doctrine\Common\EventSubscriber;
 use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
-use Sidus\FileUploadBundle\Manager\ResourceManager;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 
 /**
@@ -14,13 +14,13 @@ use Sidus\FileUploadBundle\Model\ResourceInterface;
  */
 class ResourceSubscriber implements EventSubscriber
 {
-    /** @var ResourceManager */
+    /** @var ResourceManagerInterface */
     protected $resourceManager;
 
     /**
-     * @param ResourceManager $resourceManager
+     * @param ResourceManagerInterface $resourceManager
      */
-    public function __construct(ResourceManager $resourceManager)
+    public function __construct(ResourceManagerInterface $resourceManager)
     {
         $this->resourceManager = $resourceManager;
     }

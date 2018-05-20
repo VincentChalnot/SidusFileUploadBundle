@@ -2,7 +2,7 @@
 
 namespace Sidus\FileUploadBundle\Twig;
 
-use Sidus\FileUploadBundle\Manager\ResourceManager;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Twig_Extension;
 use Twig_SimpleFunction;
@@ -14,13 +14,13 @@ use Twig_SimpleFunction;
  */
 class UploadExtension extends Twig_Extension
 {
-    /** @var ResourceManager */
+    /** @var ResourceManagerInterface */
     protected $resourceManager;
 
     /**
-     * @param ResourceManager $resourceManager
+     * @param ResourceManagerInterface $resourceManager
      */
-    public function __construct(ResourceManager $resourceManager)
+    public function __construct(ResourceManagerInterface $resourceManager)
     {
         $this->resourceManager = $resourceManager;
     }
@@ -36,16 +36,16 @@ class UploadExtension extends Twig_Extension
     }
 
     /**
-     * @param ResourceInterface|null $resource
-     * @param string                 $action
-     * @param bool                   $absolute
+     * @param ResourceInterface $resource
+     * @param bool              $absolute
+     *
+     * @throws \Exception
      *
      * @return string
-     * @throws \Exception
      */
-    public function getResourcePath(ResourceInterface $resource = null, $action = 'download', $absolute = false)
+    public function getResourcePath(ResourceInterface $resource, $absolute = false)
     {
-        return $this->resourceManager->getFileUrl($resource, $action, $absolute);
+        return $this->resourceManager->getFileUrl($resource, $absolute);
     }
 
     /**

@@ -1,8 +1,9 @@
 services:
-    sidus_file_upload.form.resource_type:
+    Sidus\FileUploadBundle\Form\Type\ResourceType:
         class: Sidus\FileUploadBundle\Form\Type\ResourceType
+        public: false
         arguments:
-            - '@sidus_file_upload.resource.manager'
-            - '@doctrine'
+            - '@Sidus\FileUploadBundle\Manager\ResourceManagerInterface'
+            - '@Doctrine\Common\Persistence\ManagerRegistry'
         tags:
             - { name: form.type }

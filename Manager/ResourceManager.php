@@ -2,14 +2,12 @@
 
 namespace Sidus\FileUploadBundle\Manager;
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
+use Doctrine\Common\Persistence\ManagerRegistry;
 use Emgag\Flysystem\Hash\HashPlugin;
 use League\Flysystem\File;
 use League\Flysystem\FileNotFoundException;
-use League\Flysystem\FilesystemInterface;
 use Psr\Log\LoggerInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
-use Sidus\FileUploadBundle\Entity\ResourceRepository;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
 use Symfony\Component\Routing\RouterInterface;
@@ -20,12 +18,12 @@ use UnexpectedValueException;
  *
  * @author Vincent Chalnot <vincent@sidus.fr>
  */
-class ResourceManager
+class ResourceManager implements ResourceManagerInterface
 {
     /** @var ResourceTypeConfiguration[] */
     protected $resourceConfigurations;
 
-    /** @var Registry */
+    /** @var ManagerRegistry */
     protected $doctrine;
 
     /** @var LoggerInterface */
@@ -38,13 +36,13 @@ class ResourceManager
     protected $router;
 
     /**
-     * @param Registry           $doctrine
+     * @param ManagerRegistry    $doctrine
      * @param LoggerInterface    $logger
      * @param FilesystemRegistry $filesystemRegistry
      * @param RouterInterface    $router
      */
     public function __construct(
-        Registry $doctrine,
+        ManagerRegistry $doctrine,
         LoggerInterface $logger,
         FilesystemRegistry $filesystemRegistry,
         RouterInterface $router
@@ -56,18 +54,7 @@ class ResourceManager
     }
 
     /**
-     * Add an entry for Resource entity in database at each upload
-     * OR: find the already uploaded file based on it's hash
-     *
-     * @param File   $file
-     * @param string $originalFilename
-     * @param string $type
-     *
-     * @throws \InvalidArgumentException
-     * @throws UnexpectedValueException
-     * @throws \RuntimeException
-     *
-     * @return ResourceInterface
+     * {@inheritdoc}
      */
     public function addFile(File $file, $originalFilename, $type = null)
     {
@@ -103,12 +90,7 @@ class ResourceManager
     }
 
     /**
-     * Remove a Resource from the hard drive
-     * DOES NOT REMOVE THE ENTITY
-     *
-     * @param ResourceInterface $resource
-     *
-     * @throws UnexpectedValueException
+     * {@inheritdoc}
      */
     public function removeResourceFile(ResourceInterface $resource)
     {
@@ -123,13 +105,7 @@ class ResourceManager
     }
 
     /**
-     * Get the url of a "Resource" (for the web)
-     *
-     * @param ResourceInterface $resource
-     * @param bool              $absolute
-     *
-     * @return string
-     * @throws \Exception
+     * {@inheritdoc}
      */
     public function getFileUrl(ResourceInterface $resource, $absolute = false)
     {
@@ -144,11 +120,7 @@ class ResourceManager
     }
 
     /**
-     * @param ResourceInterface $resource
-     *
-     * @throws UnexpectedValueException
-     *
-     * @return FilesystemInterface
+     * {@inheritdoc}
      */
     public function getFilesystem(ResourceInterface $resource)
     {
@@ -156,11 +128,7 @@ class ResourceManager
     }
 
     /**
-     * @param string $type
-     *
-     * @throws UnexpectedValueException
-     *
-     * @return FilesystemInterface
+     * {@inheritdoc}
      */
     public function getFilesystemForType($type)
     {
@@ -170,13 +138,7 @@ class ResourceManager
     }
 
     /**
-     * Get the path for an uploaded file, does not check if file exists
-     *
-     * @param ResourceInterface $resource
-     *
-     * @throws \UnexpectedValueException
-     *
-     * @return File
+     * {@inheritdoc}
      */
     public function getFile(ResourceInterface $resource)
     {
@@ -189,7 +151,7 @@ class ResourceManager
     }
 
     /**
-     * @return ResourceTypeConfiguration[]
+     * {@inheritdoc}
      */
     public function getResourceConfigurations()
     {
@@ -197,10 +159,7 @@ class ResourceManager
     }
 
     /**
-     * @param string $type
-     *
-     * @return ResourceTypeConfiguration
-     * @throws UnexpectedValueException
+     * {@inheritdoc}
      */
     public function getResourceTypeConfiguration($type)
     {
@@ -212,8 +171,7 @@ class ResourceManager
     }
 
     /**
-     * @param string $code
-     * @param array  $resourceConfiguration
+     * {@inheritdoc}
      */
     public function addResourceConfiguration($code, array $resourceConfiguration)
     {
@@ -222,11 +180,7 @@ class ResourceManager
     }
 
     /**
-     * @param string $type
-     *
-     * @throws \UnexpectedValueException
-     *
-     * @return ResourceRepository
+     * {@inheritdoc}
      */
     public function getRepositoryForType($type)
     {
@@ -236,10 +190,9 @@ class ResourceManager
     }
 
     /**
-     * @param $type
+     * @param string $type
      *
      * @return ResourceInterface
-     * @throws UnexpectedValueException
      */
     protected function createByType($type)
     {

@@ -2,18 +2,16 @@
 
 namespace Sidus\FileUploadBundle\Command;
 
-use Doctrine\Bundle\DoctrineBundle\Registry;
+use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\MappingException;
 use League\Flysystem\AdapterInterface;
-use League\Flysystem\Filesystem;
-use League\Flysystem\FilesystemInterface;
 use Sensio\Bundle\GeneratorBundle\Command\Helper\QuestionHelper;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Sidus\FileUploadBundle\Entity\ResourceRepository;
-use Sidus\FileUploadBundle\Manager\ResourceManager;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
@@ -38,10 +36,10 @@ use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
  */
 class CleanAssetsCommand extends ContainerAwareCommand
 {
-    /** @var ResourceManager */
+    /** @var ResourceManagerInterface */
     protected $resourceManager;
 
-    /** @var Registry */
+    /** @var ManagerRegistry */
     protected $doctrine;
 
     /** @var array */
@@ -86,9 +84,9 @@ class CleanAssetsCommand extends ContainerAwareCommand
     protected function initialize(InputInterface $input, OutputInterface $output)
     {
         // Check if this command can be launched ?
-        $this->resourceManager = $this->getContainer()->get('sidus_file_upload.resource.manager');
-        $this->doctrine = $this->getContainer()->get('doctrine');
-        $this->fileSystemRegistry = $this->getContainer()->get('sidus_file_upload.registry.filesystem');
+        $this->resourceManager = $this->getContainer()->get(ResourceManagerInterface::class);
+        $this->doctrine = $this->getContainer()->get(ManagerRegistry::class);
+        $this->fileSystemRegistry = $this->getContainer()->get(FilesystemRegistry::class);
 
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
             $filesystem = $this->resourceManager->getFilesystemForType($resourceConfiguration->getCode());

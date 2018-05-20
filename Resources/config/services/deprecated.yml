@@ -1,0 +1,6 @@
+services:
+    sidus_file_upload.resource.manager:
+        alias: Sidus\FileUploadBundle\Manager\ResourceManagerInterface
+
+    sidus_file_upload.registry.filesystem:
+        alias: Sidus\FileUploadBundle\Registry\FilesystemRegistry

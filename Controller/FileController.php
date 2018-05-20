@@ -3,11 +3,10 @@
 namespace Sidus\FileUploadBundle\Controller;
 
 use Sidus\FileUploadBundle\Model\ResourceInterface;
+use Sidus\FileUploadBundle\Stream\FileStreamerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use UnexpectedValueException;
+use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 
 /**
  * Expose a download link for uploaded resources
@@ -27,8 +26,8 @@ class FileController extends Controller
     public function downloadAction($type, $identifier)
     {
         /** @var ResourceInterface $resource */
-        $resource = $this->get('sidus_file_upload.resource.manager')->getRepositoryForType($type)->find($identifier);
+        $resource = $this->get(ResourceManagerInterface::class)->getRepositoryForType($type)->find($identifier);
 
-        return $this->get('sidus_file_upload.file_streamer')->getStreamedResponse($resource);
+        return $this->get(FileStreamerInterface::class)->getStreamedResponse($resource);
     }
 }
