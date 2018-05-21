@@ -1,12 +1,4 @@
-parameters:
-    sidus_file_upload.resource.manager.class: Sidus\FileUploadBundle\Manager\ResourceManager
-
 services:
-    # refactor me, warning: class override is used
     Sidus\FileUploadBundle\Manager\ResourceManagerInterface:
-        class: '%sidus_file_upload.resource.manager.class%'
-        arguments:
-            - '@Doctrine\Common\Persistence\ManagerRegistry'
-            - '@Psr\Log\LoggerInterface'
-            - '@Sidus\FileUploadBundle\Registry\FilesystemRegistry'
-            - '@Symfony\Component\Routing\RouterInterface'
+        class: Sidus\FileUploadBundle\Manager\ResourceManager
+        autowire: true

@@ -8,6 +8,7 @@ use League\Flysystem\File;
 use League\Flysystem\FileNotFoundException;
 use Psr\Log\LoggerInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
+use Sidus\FileUploadBundle\Metadata\MetadataUpdaterInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
 use Symfony\Component\Routing\RouterInterface;
@@ -35,22 +36,28 @@ class ResourceManager implements ResourceManagerInterface
     /** @var RouterInterface */
     protected $router;
 
+    /** @var MetadataUpdaterInterface|null */
+    protected $metadataUpdater;
+
     /**
-     * @param ManagerRegistry    $doctrine
-     * @param LoggerInterface    $logger
-     * @param FilesystemRegistry $filesystemRegistry
-     * @param RouterInterface    $router
+     * @param ManagerRegistry               $doctrine
+     * @param LoggerInterface               $logger
+     * @param FilesystemRegistry            $filesystemRegistry
+     * @param RouterInterface               $router
+     * @param MetadataUpdaterInterface|null $metadataUpdater
      */
     public function __construct(
         ManagerRegistry $doctrine,
         LoggerInterface $logger,
         FilesystemRegistry $filesystemRegistry,
-        RouterInterface $router
+        RouterInterface $router,
+        MetadataUpdaterInterface $metadataUpdater = null
     ) {
         $this->doctrine = $doctrine;
         $this->logger = $logger;
         $this->filesystemRegistry = $filesystemRegistry;
         $this->router = $router;
+        $this->metadataUpdater = $metadataUpdater;
     }
 
     /**
@@ -80,7 +87,9 @@ class ResourceManager implements ResourceManagerInterface
             ->setPath($file->getPath())
             ->setHash($hash);
 
-        $this->updateResourceMetadata($resource, $file);
+        if ($this->metadataUpdater) {
+            $this->metadataUpdater->updateResourceMetadata($resource, $file);
+        }
 
         $em = $this->doctrine->getManager();
         $em->persist($resource);
@@ -199,18 +208,6 @@ class ResourceManager implements ResourceManagerInterface
         $entity = $this->getResourceTypeConfiguration($type)->getEntity();
 
         return new $entity();
-    }
-
-    /**
-     * Allow to update the resource based on custom logic
-     * Should be handled in an event
-     *
-     * @param ResourceInterface $resource
-     * @param File              $file
-     */
-    protected function updateResourceMetadata(ResourceInterface $resource, File $file)
-    {
-        // Custom logic
     }
 
     /**

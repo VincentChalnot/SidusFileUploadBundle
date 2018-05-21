@@ -2,11 +2,9 @@
 
 namespace Sidus\FileUploadBundle\Controller;
 
-use Sidus\FileUploadBundle\Model\ResourceInterface;
-use Sidus\FileUploadBundle\Stream\FileStreamerInterface;
+use Sidus\FileUploadBundle\Action\FileDownloadAction;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
-use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 
 /**
  * Expose a download link for uploaded resources
@@ -25,9 +23,9 @@ class FileController extends Controller
      */
     public function downloadAction($type, $identifier)
     {
-        /** @var ResourceInterface $resource */
-        $resource = $this->get(ResourceManagerInterface::class)->getRepositoryForType($type)->find($identifier);
+        $m = __METHOD__.' is deprecated, consider using the '.FileDownloadAction::class.' action/service instead';
+        @trigger_error($m, E_USER_DEPRECATED);
 
-        return $this->get(FileStreamerInterface::class)->getStreamedResponse($resource);
+        return $this->get(FileDownloadAction::class)->__invoke($type, $identifier);
     }
 }

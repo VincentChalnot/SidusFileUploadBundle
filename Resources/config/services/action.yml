@@ -1,0 +1,5 @@
+services:
+    Sidus\FileUploadBundle\Action\FileDownloadAction:
+        class: Sidus\FileUploadBundle\Action\FileDownloadAction
+        public: true
+        autowire: true
