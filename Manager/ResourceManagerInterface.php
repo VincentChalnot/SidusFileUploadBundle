@@ -5,8 +5,8 @@ namespace Sidus\FileUploadBundle\Manager;
 use League\Flysystem\File;
 use League\Flysystem\FilesystemInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
-use Sidus\FileUploadBundle\Entity\ResourceRepository;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
+use Sidus\FileUploadBundle\Model\ResourceRepositoryInterface;
 use UnexpectedValueException;
 
 /**
@@ -92,7 +92,7 @@ interface ResourceManagerInterface
     /**
      * @param string $type
      *
-     * @return ResourceRepository
+     * @return ResourceRepositoryInterface
      */
     public function getRepositoryForType($type);
 }

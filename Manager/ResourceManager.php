@@ -3,6 +3,8 @@
 namespace Sidus\FileUploadBundle\Manager;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\Common\Util\ClassUtils;
+use Doctrine\ORM\EntityManagerInterface;
 use Emgag\Flysystem\Hash\HashPlugin;
 use League\Flysystem\File;
 use League\Flysystem\FileNotFoundException;
@@ -91,9 +93,13 @@ class ResourceManager implements ResourceManagerInterface
             $this->metadataUpdater->updateResourceMetadata($resource, $file);
         }
 
-        $em = $this->doctrine->getManager();
-        $em->persist($resource);
-        $em->flush();
+        $className = ClassUtils::getClass($resource);
+        $entityManager = $this->doctrine->getManagerForClass($className);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new UnexpectedValueException("No manager found for class {$className}");
+        }
+        $entityManager->persist($resource);
+        $entityManager->flush();
 
         return $resource;
     }
@@ -190,12 +196,19 @@ class ResourceManager implements ResourceManagerInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @throws \InvalidArgumentException
      */
     public function getRepositoryForType($type)
     {
         $class = $this->getResourceTypeConfiguration($type)->getEntity();
 
-        return $this->doctrine->getRepository($class);
+        $entityManager = $this->doctrine->getManagerForClass($class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \InvalidArgumentException("No manager found for class {$class}");
+        }
+
+        return $entityManager->getRepository($class);
     }
 
     /**

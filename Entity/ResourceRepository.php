@@ -5,18 +5,17 @@ namespace Sidus\FileUploadBundle\Entity;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityRepository;
+use Sidus\FileUploadBundle\Model\ResourceRepositoryInterface;
 
 /**
- * Currently not used
+ * Basic implementation of resource repository
  *
  * @author Vincent Chalnot <vincent@sidus.fr>
  */
-class ResourceRepository extends EntityRepository
+class ResourceRepository extends EntityRepository implements ResourceRepositoryInterface
 {
     /**
-     * Find all "paths" in
-     *
-     * @return Collection
+     * {@inheritdoc}
      */
     public function getPaths()
     {
@@ -24,7 +23,7 @@ class ResourceRepository extends EntityRepository
             ->createQueryBuilder('r')
             ->select('r.path');
 
-        $paths = new ArrayCollection();
+        $paths = [];
         foreach ($qb->getQuery()->getArrayResult() as $item) {
             $paths[$item['path']] = $item['path'];
         }

@@ -3,14 +3,14 @@
 namespace Sidus\FileUploadBundle\Command;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\MappingException;
 use League\Flysystem\AdapterInterface;
 use Sensio\Bundle\GeneratorBundle\Command\Helper\QuestionHelper;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
-use Sidus\FileUploadBundle\Entity\ResourceRepository;
+use Sidus\FileUploadBundle\Model\ResourceRepositoryInterface;
 use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
@@ -114,6 +114,15 @@ class CleanAssetsCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $messages = [
+            'info' => '<error>WARNING! This command involves a very high risk of data/file losses</error>',
+            'skipping' => '<comment>Exiting</comment>',
+            'question' => "<info>Are you sure you want to execute this command ? y/[n]</info>\n",
+        ];
+        if (!$this->askQuestion($input, $output, [true], $messages)) {
+            return 0;
+        }
+
         $executeAll = true;
         if ($input->getOption('delete-extra')
             || $input->getOption('delete-orphans')
@@ -210,6 +219,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @param InputInterface  $input
      * @param OutputInterface $output
      *
+     * @throws \UnexpectedValueException
      * @throws \Symfony\Component\Console\Exception\RuntimeException
      * @throws \InvalidArgumentException
      * @throws \BadMethodCallException
@@ -220,88 +230,80 @@ class CleanAssetsCommand extends ContainerAwareCommand
      */
     protected function executeDeleteOrphans(InputInterface $input, OutputInterface $output)
     {
-        $associations = [];
-        $reverseAssociations = [];
-        $resourceEntities = [];
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
-            $resourceEntities[] = $resourceConfiguration->getEntity();
-        }
-        /** @var ClassMetadata[] $metadatas */
-        $metadatas = $this->doctrine->getManager()->getMetadataFactory()->getAllMetadata();
-        foreach ($metadatas as $metadata) {
-            foreach ($resourceEntities as $entity) {
-                if ($metadata->getName() === $entity) {
-                    foreach ($metadata->getAssociationMappings() as $fieldName => $association) {
-                        $associations[] = $association;
-                    }
-                }
-                foreach ($metadata->getAssociationsByTargetClass($entity) as $fieldName => $association) {
-                    $reverseAssociations[] = $association;
-                }
+            $className = $resourceConfiguration->getEntity();
+            $entityManager = $this->doctrine->getManagerForClass($className);
+            if (!$entityManager instanceof EntityManagerInterface) {
+                throw new \UnexpectedValueException("No manager found for class {$className}");
             }
+
+            $foundEntities = $this->findAssociatedEntities($entityManager, $className);
+
+            $this->removeOrphanEntities($input, $output, $entityManager, $resourceConfiguration, $foundEntities);
         }
-
-        $foundEntities = $this->findAssociatedEntities($associations, $reverseAssociations);
-
-        $this->removeOrphanEntities($input, $output, $foundEntities);
     }
 
     /**
-     * @param array $associations
-     * @param array $reverseAssociations
+     * @param EntityManagerInterface $manager
+     * @param string                 $className
      *
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws MappingException
      * @throws InvalidArgumentException
      * @throws LogicException
      * @throws RuntimeException
      * @throws \BadMethodCallException
+     * @throws \RuntimeException
      *
      * @return array
-     * @throws \RuntimeException
      */
-    protected function findAssociatedEntities(array $associations, array $reverseAssociations)
-    {
+    protected function findAssociatedEntities(
+        EntityManagerInterface $manager,
+        $className
+    ) {
+        /** @var ClassMetadata[] $metadatas */
+        $metadatas = $manager->getMetadataFactory()->getAllMetadata();
+
         $foundEntities = [];
+        foreach ($metadatas as $metadata) {
+            if ($metadata->getName() === $className) {
+                // Collecting all resource entities with associations to other entities
+                foreach ($metadata->getAssociationMappings() as $fieldName => $association) {
+                    // Check association carried by the Resource side (clearly not recommended)
+                    // @todo Please test this code or contact the author:
+                    // We never had this case in our data set, we can't be sure it's going to behave like expected
+                    $className = $association['sourceEntity'];
+                    $metadata = $manager->getClassMetadata($className);
+                    /** @var EntityRepository $repository */
+                    $repository = $manager->getRepository($className);
+                    $qb = $repository
+                        ->createQueryBuilder('e')
+                        ->select("e.{$metadata->getSingleIdentifierColumnName()} AS id")
+                        ->where("e.{$association['fieldName']} IS NOT NULL");
 
-        // Collecting all resource entities with associations to other entities
-        foreach ($associations as $association) {
-            // @todo Check association carried by the Resource side (clearly not recommended)
-            // Please test this code or contact the author:
-            // We never had this case in our data set, we can't be sure it's going to behave like expected
-            throw new \RuntimeException('Specific untested case !');
-
-            $className = $association['sourceEntity'];
-            /** @var EntityRepository $repository */
-            $repository = $this->doctrine->getRepository($className);
-            /** @var ClassMetadata $metadata */
-            $metadata = $this->doctrine->getManager()->getClassMetadata($className);
-            $qb = $repository
-                ->createQueryBuilder('e')
-                ->select("e.{$metadata->getSingleIdentifierColumnName()} AS id")
-                ->where("e.{$association['fieldName']} IS NOT NULL");
-
-            foreach ($qb->getQuery()->getArrayResult() as $result) {
-                $value = $result['id'];
-                $foundEntities[$className][$value] = $value;
+                    foreach ($qb->getQuery()->getArrayResult() as $result) {
+                        $value = $result['id'];
+                        $foundEntities[$className][$value] = $value;
+                    }
+                }
             }
-        }
 
-        // Collecting all resource entities associated to other entities
-        foreach ($reverseAssociations as $association) {
-            $className = $association['targetEntity'];
-            /** @var EntityRepository $repository */
-            $repository = $this->doctrine->getRepository($association['sourceEntity']);
-            /** @var ClassMetadata $metadata */
-            $metadata = $this->doctrine->getManager()->getClassMetadata($className);
-            $qb = $repository
-                ->createQueryBuilder('e')
-                ->select("r.{$metadata->getSingleIdentifierColumnName()} AS id")
-                ->innerJoin("e.{$association['fieldName']}", 'r');
+            // Collecting all resource entities associated to other entities
+            foreach ($metadata->getAssociationsByTargetClass($className) as $fieldName => $association) {
+                $className = $association['targetEntity'];
+                $metadata = $manager->getClassMetadata($className);
+                /** @var EntityRepository $repository */
+                $repository = $manager->getRepository($association['sourceEntity']);
+                $qb = $repository
+                    ->createQueryBuilder('e')
+                    ->select("r.{$metadata->getSingleIdentifierColumnName()} AS id")
+                    ->innerJoin("e.{$association['fieldName']}", 'r');
 
-            foreach ($qb->getQuery()->getArrayResult() as $result) {
-                $value = $result['id'];
-                $foundEntities[$className][$value] = $value;
+                foreach ($qb->getQuery()->getArrayResult() as $result) {
+                    $value = $result['id'];
+                    $foundEntities[$className][$value] = $value;
+                }
             }
         }
 
@@ -309,10 +311,13 @@ class CleanAssetsCommand extends ContainerAwareCommand
     }
 
     /**
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     * @param array           $foundEntities
+     * @param InputInterface            $input
+     * @param OutputInterface           $output
+     * @param EntityManagerInterface    $manager
+     * @param ResourceTypeConfiguration $resourceConfiguration
+     * @param array                     $foundEntities
      *
+     * @throws \UnexpectedValueException
      * @throws \InvalidArgumentException
      * @throws MappingException
      * @throws InvalidArgumentException
@@ -320,54 +325,55 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @throws RuntimeException
      * @throws \BadMethodCallException
      */
-    protected function removeOrphanEntities(InputInterface $input, OutputInterface $output, array $foundEntities)
-    {
-        /** @var EntityManager $em */
-        $em = $this->doctrine->getManager();
+    protected function removeOrphanEntities(
+        InputInterface $input,
+        OutputInterface $output,
+        EntityManagerInterface $manager,
+        ResourceTypeConfiguration $resourceConfiguration,
+        array $foundEntities
+    ) {
+        $className = $resourceConfiguration->getEntity();
+        $metadata = $manager->getClassMetadata($className);
+        /** @var EntityRepository $repository */
+        $repository = $manager->getRepository($className);
+        $ids = isset($foundEntities[$className]) ? $foundEntities[$className] : [];
+        $qb = $repository
+            ->createQueryBuilder('e')
+            ->where("e.{$metadata->getSingleIdentifierColumnName()} NOT IN (:ids)")
+            ->setParameter('ids', $ids);
 
-        foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
-            $repository = $this->getRepository($resourceConfiguration);
-            $className = $resourceConfiguration->getEntity();
-            /** @var ClassMetadata $metadata */
-            $metadata = $this->doctrine->getManager()->getClassMetadata($className);
-            $ids = isset($foundEntities[$className]) ? $foundEntities[$className] : [];
-            $qb = $repository
-                ->createQueryBuilder('e')
-                ->where("e.{$metadata->getSingleIdentifierColumnName()} NOT IN (:ids)")
-                ->setParameter('ids', $ids);
-
-            $results = [];
-            /** @var ResourceInterface $result */
-            foreach ($qb->getQuery()->getResult() as $result) {
-                // We filter the results based on their type, it's really important with single-table inheritance as
-                // Doctrine will load all subtype for a current class and this cannot be done easily in the query.
-                if ($result->getType() !== $resourceConfiguration->getCode()) {
-                    continue;
-                }
-                $results[] = $result;
+        $results = [];
+        foreach ($qb->getQuery()->getResult() as $result) {
+            if (!$result instanceof ResourceInterface) {
+                throw new \UnexpectedValueException('Results should implement ResourceInterface');
             }
-
-            $messages = $this->getEntityRemovalMessages($metadata, $results);
-            if (!$this->askQuestion($input, $output, $results, $messages)) {
+            // We filter the results based on their type, it's really important with single-table inheritance as
+            // Doctrine will load all subtype for a current class and this cannot be done easily in the query.
+            if ($result->getType() !== $resourceConfiguration->getCode()) {
                 continue;
             }
+            $results[] = $result;
+        }
 
-            /** @var ResourceInterface $result */
-            foreach ($results as $result) {
-                if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-                    $m = "<comment>Removing {$result->getType()}";
-                    $m .= " : {$result->getPath()} - {$result->getOriginalFileName()}</comment>";
+        $messages = $this->getEntityRemovalMessages($metadata, $results);
+        if (!$this->askQuestion($input, $output, $results, $messages)) {
+            return;
+        }
+
+        foreach ($results as $result) {
+            if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
+                $m = "<comment>Removing {$result->getType()}";
+                $m .= " : {$result->getPath()} - {$result->getOriginalFileName()}</comment>";
+                $output->writeln($m);
+            }
+            if (!$input->getOption('simulate')) {
+                try {
+                    $manager->remove($result);
+                    $manager->flush($result);
+                } catch (\Exception $e) {
+                    $m = "<error>An error occured while trying to delete #{$result->getIdentifier()} ";
+                    $m .= "{$result->getOriginalFileName()}: {$e->getMessage()}</error>";
                     $output->writeln($m);
-                }
-                if (!$input->getOption('simulate')) {
-                    try {
-                        $em->remove($result);
-                        $em->flush($result);
-                    } catch (\Exception $e) {
-                        $m = "<error>An error occured while trying to delete #{$result->getIdentifier()} ";
-                        $m .= "{$result->getOriginalFileName()}: {$e->getMessage()}</error>";
-                        $output->writeln($m);
-                    }
                 }
             }
         }
@@ -377,8 +383,9 @@ class CleanAssetsCommand extends ContainerAwareCommand
      * @param ClassMetadata $metadata
      * @param array         $results
      *
-     * @return array
      * @throws \BadMethodCallException
+     *
+     * @return array
      */
     protected function getEntityRemovalMessages(ClassMetadata $metadata, array $results)
     {
@@ -425,7 +432,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
         array $messages
     ) {
         $count = \count($items);
-        if ($count === 0) {
+        if (0 === $count) {
             if (isset($messages['no_item']) && $output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                 $output->writeln($messages['no_item']);
             }
@@ -472,13 +479,28 @@ class CleanAssetsCommand extends ContainerAwareCommand
     {
         $entityPathByFilesystems = [];
         foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
-            $paths = $this->getRepository($resourceConfiguration)->getPaths()->toArray();
+            $className = $resourceConfiguration->getEntity();
+            $entityManager = $this->doctrine->getManagerForClass($className);
+            if (!$entityManager instanceof EntityManagerInterface) {
+                throw new \UnexpectedValueException("No manager found for class {$className}");
+            }
+            $repository = $entityManager->getRepository($className);
+            if (!$repository instanceof ResourceRepositoryInterface) {
+                throw new \UnexpectedValueException(
+                    "Repository for class {$className} must implement ResourceRepositoryInterface"
+                );
+            }
+
+            $paths = $repository->getPaths();
             $adapterReference = $this->adaptersByResourceType[$resourceConfiguration->getCode()];
-            if (!array_key_exists($adapterReference, $entityPathByFilesystems)) {
-                $entityPathByFilesystems[$adapterReference] = $paths;
-            } else {
+            if (array_key_exists($adapterReference, $entityPathByFilesystems)) {
                 /** @noinspection SlowArrayOperationsInLoopInspection */
-                $entityPathByFilesystems[$adapterReference] = array_merge($entityPathByFilesystems[$adapterReference], $paths);
+                $entityPathByFilesystems[$adapterReference] = array_merge(
+                    $entityPathByFilesystems[$adapterReference],
+                    $paths
+                );
+            } else {
+                $entityPathByFilesystems[$adapterReference] = $paths;
             }
         }
 
@@ -486,7 +508,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
             $existingPaths = [];
             foreach ($adapter->listContents() as $metadata) {
                 $entityPath = $metadata['path'];
-                if ($entityPath === '.gitkeep') {
+                if ('.gitkeep' === $entityPath) {
                     continue;
                 }
                 $existingPaths[$entityPath] = $entityPath;
@@ -495,15 +517,5 @@ class CleanAssetsCommand extends ContainerAwareCommand
             $this->extraFiles[$adapterReference] = array_diff_key($existingPaths, $entityPaths);
             $this->missingFiles[$adapterReference] = array_diff_key($entityPaths, $existingPaths);
         }
-    }
-
-    /**
-     * @param ResourceTypeConfiguration $resourceConfiguration
-     *
-     * @return ResourceRepository
-     */
-    protected function getRepository(ResourceTypeConfiguration $resourceConfiguration)
-    {
-        return $this->doctrine->getRepository($resourceConfiguration->getEntity());
     }
 }

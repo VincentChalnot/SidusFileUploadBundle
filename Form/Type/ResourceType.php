@@ -4,7 +4,8 @@ namespace Sidus\FileUploadBundle\Form\Type;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\Common\Persistence\ObjectRepository;
-use Doctrine\ORM\EntityManager;
+use Doctrine\Common\Util\ClassUtils;
+use Doctrine\ORM\EntityManagerInterface;
 use Sidus\FileUploadBundle\Configuration\ResourceTypeConfiguration;
 use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
@@ -156,7 +157,12 @@ class ResourceType extends AbstractType
                     throw new \UnexpectedValueException("Missing option 'class' or 'repository'");
                 }
 
-                return $this->doctrine->getRepository($class);
+                $entityManager = $this->doctrine->getManagerForClass($class);
+                if (!$entityManager instanceof EntityManagerInterface) {
+                    throw new \UnexpectedValueException("No manager found for class {$class}");
+                }
+
+                return $entityManager->getRepository($class);
             }
         );
     }
@@ -171,11 +177,14 @@ class ResourceType extends AbstractType
      */
     protected function getIdentifierValue(ResourceInterface $originalData)
     {
-        /** @var EntityManager $em */
-        $em = $this->doctrine->getManager();
-        $metadata = $em->getClassMetadata(get_class($originalData));
+        $class = ClassUtils::getClass($originalData);
+        $entityManager = $this->doctrine->getManagerForClass($class);
+        if (!$entityManager instanceof EntityManagerInterface) {
+            throw new \InvalidArgumentException("No manager found for class {$class}");
+        }
+        $metadata = $entityManager->getClassMetadata($class);
         $identifier = $metadata->getIdentifierValues($originalData);
-        if (count($identifier) !== 1) {
+        if (1 !== \count($identifier)) {
             throw new \LogicException('ResourceInterface must have a single identifier (primary key)');
         }
 
