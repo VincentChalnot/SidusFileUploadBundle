@@ -39,8 +39,7 @@ class ResourceUploader
     {
         $file = $event->getFile();
         if (!$file instanceof FlysystemFile) {
-            $class = get_class($file);
-            throw new \UnexpectedValueException("Only Flysystem Files are supported, '{$class}' given");
+            return;
         }
 
         $originalFilename = $file->getBasename();
