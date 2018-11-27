@@ -4,7 +4,7 @@
         <input type="hidden" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}/>
         <span class="btn btn-labeled btn-info fileupload-button{% if form.vars.disabled or file %} disabled{% endif %}">
             <span class="btn-label icon fa fa-plus"></span>
-            Upload a file
+            {{ 'sidus.file_upload.action.upload.label'|trans }}
             {% if not form.vars.disabled %}
                 <input type="file" data-url="{{ oneup_uploader_endpoint(form.vars.endpoint) }}"
                        data-maxsize="{{ oneup_uploader_maxsize(form.vars.endpoint) }}">

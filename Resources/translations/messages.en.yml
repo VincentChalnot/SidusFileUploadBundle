@@ -1,0 +1,5 @@
+sidus:
+    file_upload:
+        action:
+            upload:
+                label: Upload a file
