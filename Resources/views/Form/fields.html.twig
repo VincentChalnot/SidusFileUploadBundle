@@ -7,6 +7,7 @@
             {{ 'sidus.file_upload.action.upload.label'|trans }}
             {% if not form.vars.disabled %}
                 <input type="file" data-url="{{ oneup_uploader_endpoint(form.vars.endpoint) }}"
+                       id="{{ id }}_upload"
                        data-maxsize="{{ oneup_uploader_maxsize(form.vars.endpoint) }}">
             {% endif %}
         </span>
