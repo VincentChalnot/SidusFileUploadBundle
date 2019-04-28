@@ -6,6 +6,7 @@ use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Sidus\FileUploadBundle\Stream\FileStreamerInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Expose a download link for uploaded resources
@@ -40,8 +41,10 @@ class FileDownloadAction
      */
     public function __invoke($type, $identifier)
     {
-        /** @var ResourceInterface $resource */
         $resource = $this->resourceManager->getRepositoryForType($type)->find($identifier);
+        if (!$resource instanceof ResourceInterface) {
+            throw new NotFoundHttpException("Unable to find resource {$identifier}");
+        }
 
         return $this->fileStreamer->getStreamedResponse($resource);
     }
