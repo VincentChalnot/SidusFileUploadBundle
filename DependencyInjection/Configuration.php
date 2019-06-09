@@ -36,6 +36,7 @@ class Configuration implements ConfigurationInterface
 
         $resourceDefinition = $rootNode
             ->children()
+            ->booleanNode('enable_serializer')->defaultFalse()->end()
             ->arrayNode('configurations')
             ->useAttributeAsKey('code')
             ->prototype('array')

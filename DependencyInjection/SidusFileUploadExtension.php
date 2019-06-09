@@ -37,6 +37,10 @@ class SidusFileUploadExtension extends Extension
         $configuration = new Configuration();
         $config = $this->processConfiguration($configuration, $configs);
 
+        if ($config['enable_serializer']) {
+            $loader->load('normalizer.yml'); // Only enable resource normalizer if serializer is enabled
+        }
+
         $managerDefinition = $container->getDefinition(ResourceManagerInterface::class);
 
         // Automatically declare a service for each attribute configured

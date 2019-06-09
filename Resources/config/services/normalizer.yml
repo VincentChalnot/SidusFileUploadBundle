@@ -1,0 +1,15 @@
+services:
+    Sidus\FileUploadBundle\Serializer\Normalizer\ResourceNormalizer:
+        parent: serializer.normalizer.object
+        public: false
+        calls:
+            -
+                - extendConstruct
+                -
+                    - '@Sidus\FileUploadBundle\Manager\ResourceManagerInterface'
+                    - '@Doctrine\Common\Persistence\ManagerRegistry'
+                    - '@Sidus\BaseSerializerBundle\Serializer\MaxDepthHandler'
+                    - '@Sidus\BaseSerializerBundle\Serializer\ByReferenceHandler'
+                    - '@service_container' # There is no resource controller registry for now
+        tags:
+            - { name: serializer.normalizer }

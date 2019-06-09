@@ -157,3 +157,44 @@ $(document).find('.fileupload-widget').each(function () {
 When creating a form, you can simply use the "sidus_resource" type to declare the field as an
 upload. You will only require to set the "resource_type" options corresponding to the entity
 you want to use.
+
+### Serializer
+
+If you want the Symfony serializer support, you also need to require this:
+
+```bash
+$ composer require sidus/base-serializer-bundle
+```
+
+You need to enable these bundles in your kernel:
+```php
+<?php
+
+class AppKernel
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function registerBundles()
+    {
+        $bundles = [
+            // ...
+            new Sidus\BaseBundle\SidusBaseBundle(),
+            new Sidus\BaseSerializerBundle\SidusBaseSerializerBundle(),
+            // Then the one documented in the install process
+            new Oneup\UploaderBundle\OneupUploaderBundle(),
+            new Oneup\FlysystemBundle\OneupFlysystemBundle(),
+            new Sidus\FileUploadBundle\SidusFileUploadBundle(),
+            // ...
+        ];
+        // ...
+    }
+}
+```
+
+And last, you need to enable serializer support in the configuration:
+
+```yml
+sidus_file_upload:
+    enable_serializer: true
+```
