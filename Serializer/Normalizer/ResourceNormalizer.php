@@ -261,10 +261,10 @@ class ResourceNormalizer extends ObjectNormalizer
         }
 
         $type = \call_user_func([$class, 'getType']);
-        if (!isset($this->uploadManagers[$type])) {
+        $serviceId = "oneup_uploader.controller.{$type}";
+        if (!$this->container->has($serviceId)) {
             throw new RuntimeException("Unknown upload type {$type}");
         }
-        $serviceId = "oneup_uploader.controller.{$type}";
         $uploadManager = $this->container->get($serviceId);
         if (!$uploadManager instanceof BlueimpController) {
             throw new \UnexpectedValueException("No controller available to resource type {$type}");

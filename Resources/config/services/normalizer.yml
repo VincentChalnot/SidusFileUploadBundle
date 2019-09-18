@@ -12,4 +12,4 @@ services:
                     - '@Sidus\BaseSerializerBundle\Serializer\ByReferenceHandler'
                     - '@service_container' # There is no resource controller registry for now
         tags:
-            - { name: serializer.normalizer }
+            - { name: serializer.normalizer, priority: 3 }
