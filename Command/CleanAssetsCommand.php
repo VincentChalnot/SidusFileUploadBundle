@@ -14,7 +14,7 @@ use Sidus\FileUploadBundle\Model\ResourceRepositoryInterface;
 use Sidus\FileUploadBundle\Manager\ResourceManagerInterface;
 use Sidus\FileUploadBundle\Model\ResourceInterface;
 use Sidus\FileUploadBundle\Registry\FilesystemRegistry;
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Exception\LogicException;
 use Symfony\Component\Console\Exception\RuntimeException;
@@ -22,8 +22,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
-use Symfony\Component\DependencyInjection\Exception\ServiceCircularReferenceException;
-use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 
 /**
  * Cleanup extra files, orphan files and entities with missing files
@@ -34,7 +32,7 @@ use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
  *
  * @author Vincent Chalnot <vincent@sidus.fr>
  */
-class CleanAssetsCommand extends ContainerAwareCommand
+class CleanAssetsCommand extends Command
 {
     /** @var ResourceManagerInterface */
     protected $resourceManager;
@@ -58,6 +56,38 @@ class CleanAssetsCommand extends ContainerAwareCommand
     protected $missingFiles = [];
 
     /**
+     * @param ResourceManagerInterface $resourceManager
+     * @param ManagerRegistry          $doctrine
+     * @param FilesystemRegistry       $fileSystemRegistry
+     */
+    public function __construct(
+        ResourceManagerInterface $resourceManager,
+        ManagerRegistry $doctrine,
+        FilesystemRegistry $fileSystemRegistry
+    ) {
+        parent::__construct();
+        $this->resourceManager = $resourceManager;
+        $this->doctrine = $doctrine;
+        $this->fileSystemRegistry = $fileSystemRegistry;
+
+        foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
+            $filesystem = $this->resourceManager->getFilesystemForType($resourceConfiguration->getCode());
+            if (!method_exists($filesystem, 'getAdapter')) {
+                // This is due to the fact that the Filesystem layer does not differentiate it's own files from other
+                // files owned by a different filesystem but with the same adapter
+                // In the end if we want to make sure that we don't delete files from an other filesystem using the
+                // same adapter we need to get to the adapter
+                throw new \UnexpectedValueException('Filesystem must allow access to adapter');
+            }
+            $adapter = $filesystem->getAdapter();
+            $adapterReference = spl_object_hash($adapter);
+            $this->adapters[$adapterReference] = $adapter;
+            $this->adaptersByResourceType[$resourceConfiguration->getCode()] = $adapterReference;
+        }
+    }
+
+
+    /**
      * @throws InvalidArgumentException
      */
     protected function configure()
@@ -70,38 +100,6 @@ class CleanAssetsCommand extends ContainerAwareCommand
             ->addOption('force', null, InputOption::VALUE_NONE, 'Force actions (no interaction)')
             ->addOption('simulate', null, InputOption::VALUE_NONE, 'Do not remove anything, only simulate the action')
             ->setDescription('Cleanup orphan files and extra assets');
-    }
-
-    /**
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     *
-     * @throws \LogicException
-     * @throws ServiceCircularReferenceException
-     * @throws ServiceNotFoundException
-     * @throws \UnexpectedValueException
-     */
-    protected function initialize(InputInterface $input, OutputInterface $output)
-    {
-        // Check if this command can be launched ?
-        $this->resourceManager = $this->getContainer()->get(ResourceManagerInterface::class);
-        $this->doctrine = $this->getContainer()->get(ManagerRegistry::class);
-        $this->fileSystemRegistry = $this->getContainer()->get(FilesystemRegistry::class);
-
-        foreach ($this->resourceManager->getResourceConfigurations() as $resourceConfiguration) {
-            $filesystem = $this->resourceManager->getFilesystemForType($resourceConfiguration->getCode());
-            if (!method_exists($filesystem, 'getAdapter')) {
-                // This is due to the fact that the Filesystem layer does not differenciate it's own files from other
-                // files owned by a different filesystem but with the same adapter
-                // In the end if we want to make sure that we don't delete files from an other filesystem using the
-                // same adapter we need to get to the adapter
-                throw new \UnexpectedValueException('Filesystem must allow access to adapter');
-            }
-            $adapter = $filesystem->getAdapter();
-            $adapterReference = spl_object_hash($adapter);
-            $this->adapters[$adapterReference] = $adapter;
-            $this->adaptersByResourceType[$resourceConfiguration->getCode()] = $adapterReference;
-        }
     }
 
     /**
@@ -349,7 +347,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
             }
             // We filter the results based on their type, it's really important with single-table inheritance as
             // Doctrine will load all subtype for a current class and this cannot be done easily in the query.
-            if ($result->getType() !== $resourceConfiguration->getCode()) {
+            if ($result::getType() !== $resourceConfiguration->getCode()) {
                 continue;
             }
             $results[] = $result;
@@ -362,7 +360,7 @@ class CleanAssetsCommand extends ContainerAwareCommand
 
         foreach ($results as $result) {
             if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-                $m = "<comment>Removing {$result->getType()}";
+                $m = "<comment>Removing {$result::getType()}";
                 $m .= " : {$result->getPath()} - {$result->getOriginalFileName()}</comment>";
                 $output->writeln($m);
             }

@@ -1,0 +1,7 @@
+services:
+    Sidus\FileUploadBundle\Command\CleanAssetsCommand:
+        class: Sidus\FileUploadBundle\Command\CleanAssetsCommand
+        public: false
+        autowire: true
+        tags:
+            - { name: console.command }
