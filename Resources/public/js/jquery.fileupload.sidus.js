@@ -23,6 +23,15 @@
 }(function ($) {
     'use strict';
 
+    $(document).on('click', '.fileupload-file .close', function (e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        var widget = $(this).closest('.fileupload-widget');
+        widget.find('.fileupload-file').hide();
+        widget.find('.fileupload-button').removeClass('disabled');
+        widget.find('input[type="hidden"]').val('');
+    });
+
     $.fn.sidusFileUpload = function (options) {
         var widgetAlert = function (widget, text) {
             if (text) {
@@ -34,14 +43,6 @@
 
         $(this).each(function () {
             var widget = $(this);
-
-            widget.find('.fileupload-file .close').click(function (e) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                widget.find('.fileupload-file').hide();
-                widget.find('.fileupload-button').removeClass('disabled');
-                widget.find('input[type="hidden"]').val('');
-            });
 
             var defaultOptions = {
                 dataType: 'json',
